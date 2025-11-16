@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backend Connection Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { color: green; }
+        .error { color: red; }
+        .loading { color: blue; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>🔌 Backend Connection Test</h1>
+    
+    <div class="test-section">
+        <h3>Test 1: Basic Backend Connection</h3>
+        <button onclick="testBasicConnection()">Test Connection</button>
+        <div id="basic-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>Test 2: AI Question Generation</h3>
+        <button onclick="testQuestionGeneration()">Test AI APIs</button>
+        <div id="ai-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>Test 3: Profile API</h3>
+        <button onclick="testProfileAPI()">Test Profile</button>
+        <div id="profile-result"></div>
+    </div>
+
+    <script>
+        async function testBasicConnection() {
+            const resultDiv = document.getElementById('basic-result');
+            resultDiv.innerHTML = '<span class="loading">Testing connection...</span>';
+            
+            try {
+                const response = await fetch('http://localhost:3000/api/profile', { 
+                    method: 'GET',
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = '<span class="success">✅ Backend is running and accessible!</span>';
+                } else {
+                    resultDiv.innerHTML = `<span class="error">❌ Backend responded with status: ${response.status}</span>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<span class="error">❌ Connection failed: ${error.message}</span>
+                <br><br><strong>Please check:</strong>
+                <br>1. Backend server is running (cd backend && npm start)
+                <br>2. Backend is accessible at http://localhost:3000
+                <br>3. No firewall blocking the connection`;
+            }
+        }
+
+        async function testQuestionGeneration() {
+            const resultDiv = document.getElementById('ai-result');
+            resultDiv.innerHTML = '<span class="loading">Testing AI question generation...</span>';
+            
+            try {
+                const response = await fetch('http://localhost:3000/api/generate-questions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        type: 'aptitude',
+                        careerGoal: 'software engineer',
+                        technology: 'JavaScript',
+                        questionCount: 1,
+                        apiProvider: 'gemini'
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.innerHTML = `<span class="success">✅ AI API working! Generated: ${data.questions ? data.questions.length : 0} questions</span>
+                    <br><br><strong>Response:</strong><br><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                } else {
+                    const errorText = await response.text();
+                    resultDiv.innerHTML = `<span class="error">❌ AI API failed with status: ${response.status}</span>
+                    <br><br><strong>Error:</strong><br><pre>${errorText}</pre>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<span class="error">❌ AI API test failed: ${error.message}</span>`;
+            }
+        }
+
+        async function testProfileAPI() {
+            const resultDiv = document.getElementById('profile-result');
+            resultDiv.innerHTML = '<span class="loading">Testing profile API...</span>';
+            
+            try {
+                const response = await fetch('http://localhost:3000/api/profile', { 
+                    method: 'GET',
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.innerHTML = `<span class="success">✅ Profile API working!</span>
+                    <br><br><strong>Response:</strong><br><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                } else {
+                    resultDiv.innerHTML = `<span class="error">❌ Profile API failed with status: ${response.status}</span>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<span class="error">❌ Profile API test failed: ${error.message}</span>`;
+            }
+        }
+
+        // Auto-test on page load
+        window.onload = function() {
+            console.log('🔌 Backend Connection Test Page Loaded');
+            console.log('📡 Testing backend at: http://localhost:3000');
+        };
+    </script>
+</body>
+</html>
+

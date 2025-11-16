@@ -1,0 +1,141 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+@layer base {
+  :root {
+    /* Converted from #F0F0F0 Light Gray */
+    --background: 0 0% 94%;
+    /* Adjusted for contrast against Light Gray */
+    --foreground: 240 10% 3.9%;
+
+    /* Keep card similar to background for clean look */
+    --card: 0 0% 94%;
+    --card-foreground: 240 10% 3.9%;
+
+    /* Popover remains light */
+    --popover: 0 0% 94%;
+    --popover-foreground: 240 10% 3.9%;
+
+    /* Converted from #008080 Deep Teal */
+    --primary: 180 100% 25%;
+    /* White text on Deep Teal */
+    --primary-foreground: 0 0% 98%;
+
+    /* Slightly darker gray for secondary elements */
+    --secondary: 0 0% 88%;
+    --secondary-foreground: 240 10% 3.9%;
+
+    /* Muted derived from secondary */
+    --muted: 0 0% 88%;
+    --muted-foreground: 240 4% 46%; /* Slightly lighter text */
+
+    /* Converted from #FF7F50 Coral */
+    --accent: 16 100% 66%;
+    /* Dark text on Coral for contrast */
+    --accent-foreground: 0 0% 10%;
+
+    /* Destructive remains default */
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    /* Border derived from secondary/muted */
+    --border: 0 0% 80%;
+    --input: 0 0% 80%;
+    /* Ring based on primary */
+    --ring: 180 100% 30%;
+
+    /* Chart colors using Primary, Accent, and variations */
+    --chart-1: 180 100% 25%; /* Primary */
+    --chart-2: 16 100% 66%; /* Accent */
+    --chart-3: 180 80% 35%; /* Lighter Teal */
+    --chart-4: 16 80% 75%; /* Lighter Coral */
+    --chart-5: 200 50% 50%; /* Complementary Blue */
+
+    --radius: 0.5rem;
+
+    /* Sidebar Theme - Using Primary and Secondary */
+    --sidebar-background: 180 100% 20%; /* Darker Teal */
+    --sidebar-foreground: 0 0% 94%; /* Light Gray Text */
+    --sidebar-primary: 16 100% 66%; /* Coral for primary actions in sidebar */
+    --sidebar-primary-foreground: 0 0% 10%; /* Dark text on Coral */
+    --sidebar-accent: 180 100% 30%; /* Slightly lighter Teal for accent */
+    --sidebar-accent-foreground: 0 0% 98%; /* White text on Teal accent */
+    --sidebar-border: 180 100% 15%; /* Very dark Teal border */
+    --sidebar-ring: 16 100% 70%; /* Lighter Coral ring */
+  }
+
+  .dark {
+    /* Dark Theme - Inverted and adjusted */
+    /* Dark background */
+    --background: 240 10% 3.9%;
+    /* Light foreground */
+    --foreground: 0 0% 98%;
+
+    /* Card same as background */
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+
+    /* Popover same as background */
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+
+    /* Lighter Teal for dark mode primary */
+    --primary: 180 80% 55%;
+    /* Dark text on light Teal */
+    --primary-foreground: 180 100% 15%;
+
+    /* Darker gray for secondary */
+    --secondary: 240 4% 15%;
+    --secondary-foreground: 0 0% 98%;
+
+    /* Muted derived from secondary */
+    --muted: 240 4% 15%;
+    --muted-foreground: 0 0% 63%;
+
+    /* Coral accent remains bright */
+    --accent: 16 100% 66%;
+    /* Dark text on Coral */
+    --accent-foreground: 0 0% 10%;
+
+    /* Destructive remains default dark */
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+
+    /* Border derived from secondary */
+    --border: 240 4% 20%;
+    --input: 240 4% 20%;
+    /* Ring based on primary */
+    --ring: 180 80% 60%;
+
+    /* Chart colors adjusted for dark mode */
+    --chart-1: 180 80% 55%; /* Lighter Teal */
+    --chart-2: 16 100% 66%; /* Coral */
+    --chart-3: 180 60% 45%; /* Mid Teal */
+    --chart-4: 16 80% 75%; /* Lighter Coral */
+    --chart-5: 200 60% 60%; /* Brighter Blue */
+
+    /* Sidebar Theme Dark - Deep Teal base */
+    --sidebar-background: 180 100% 15%; /* Very Dark Teal */
+    --sidebar-foreground: 0 0% 94%; /* Light Gray Text */
+    --sidebar-primary: 16 100% 66%; /* Coral for primary actions */
+    --sidebar-primary-foreground: 0 0% 10%; /* Dark text on Coral */
+    --sidebar-accent: 180 80% 55%; /* Lighter Teal for accent */
+    --sidebar-accent-foreground: 180 100% 15%; /* Dark text on light Teal */
+    --sidebar-border: 180 100% 10%; /* Even darker Teal border */
+    --sidebar-ring: 16 100% 70%; /* Lighter Coral ring */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}

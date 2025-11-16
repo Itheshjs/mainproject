@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Mock Interview</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <style>
+    .chat-container {
+      height: calc(100vh - 300px);
+      overflow-y: auto;
+    }
+    .message {
+      max-width: 80%;
+      margin: 10px;
+      padding: 10px;
+      border-radius: 10px;
+    }
+    .bot-message {
+      background-color: #f0f0f0;
+      margin-right: auto;
+    }
+    .user-message {
+      background-color: #007bff;
+      color: white;
+      margin-left: auto;
+    }
+    .stage-indicator {
+      background-color: #e9ecef;
+      padding: 5px 10px;
+      border-radius: 15px;
+      font-size: 0.9em;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body class="bg-gray-100">
+  <div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold text-center mb-8">AI Mock Interview</h1>
+    
+    <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+      <div class="mb-4">
+        <label class="block text-gray-700 text-sm font-bold mb-2" for="jobTitle">
+          Job Title
+        </label>
+        <input type="text" id="jobTitle" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="e.g., Software Engineer">
+      </div>
+      
+      <div class="mb-4">
+        <label class="block text-gray-700 text-sm font-bold mb-2" for="resume">
+          Upload Resume (PDF)
+        </label>
+        <input type="file" id="resume" accept=".pdf" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+      </div>
+      
+      <button id="startInterview" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full">
+        Start Interview
+      </button>
+    </div>
+
+    <div id="chatSection" class="hidden">
+      <div class="bg-white rounded-lg shadow-lg p-6">
+        <div id="stageIndicator" class="stage-indicator text-center"></div>
+        <div id="chatContainer" class="chat-container"></div>
+        
+        <div class="mt-4 flex">
+          <input type="text" id="userInput" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="Type your answer...">
+          <button id="sendButton" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline ml-2">
+            Send
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let resumeText = '';
+    let jobTitle = '';
+    let chatHistory = [];
+    let currentStage = 'introduction';
+
+    document.getElementById('startInterview').addEventListener('click', async () => {
+      const fileInput = document.getElementById('resume');
+      const jobTitleInput = document.getElementById('jobTitle');
+      
+      if (!fileInput.files.length) {
+        alert('Please upload a resume');
+        return;
+      }
+      
+      if (!jobTitleInput.value.trim()) {
+        alert('Please enter a job title');
+        return;
+      }
+
+      jobTitle = jobTitleInput.value.trim();
+      const file = fileInput.files[0];
+      const formData = new FormData();
+      formData.append('resume', file);
+
+      try {
+        const response = await fetch('/upload', {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to upload resume');
+        }
+        
+        const data = await response.json();
+        resumeText = data.text;
+        
+        document.getElementById('chatSection').classList.remove('hidden');
+        document.getElementById('startInterview').disabled = true;
+        document.getElementById('resume').disabled = true;
+        document.getElementById('jobTitle').disabled = true;
+        
+        // Start the interview
+        await askQuestion();
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Error uploading resume. Please try again.');
+      }
+    });
+
+    document.getElementById('sendButton').addEventListener('click', sendMessage);
+    document.getElementById('userInput').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        sendMessage();
+      }
+    });
+
+    async function sendMessage() {
+      const userInput = document.getElementById('userInput');
+      const message = userInput.value.trim();
+      
+      if (!message) return;
+      
+      // Add user message to chat
+      addMessageToChat('user', message);
+      userInput.value = '';
+      
+      // Add to history
+      chatHistory.push(`Interviewer: ${currentQuestion}\nCandidate: ${message}`);
+      
+      // Get next question
+      await askQuestion();
+    }
+
+    let currentQuestion = '';
+
+    async function askQuestion() {
+      try {
+        const response = await fetch('/ask', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            resume: resumeText,
+            job: jobTitle,
+            history: chatHistory,
+            stage: currentStage
+          })
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to get question');
+        }
+        
+        const data = await response.json();
+        currentQuestion = data.question;
+        currentStage = data.stage;
+        
+        // Update stage indicator
+        const stageIndicator = document.getElementById('stageIndicator');
+        stageIndicator.textContent = `Current Stage: ${currentStage.charAt(0).toUpperCase() + currentStage.slice(1)}`;
+        
+        // Add bot message to chat
+        addMessageToChat('bot', currentQuestion);
+        
+        // If it's the final stage, disable input
+        if (data.is_final) {
+          document.getElementById('userInput').disabled = true;
+          document.getElementById('sendButton').disabled = true;
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        addMessageToChat('bot', 'Sorry, there was an error getting the next question. Please try again.');
+      }
+    }
+
+    function addMessageToChat(sender, message) {
+      const chatContainer = document.getElementById('chatContainer');
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `message ${sender}-message`;
+      messageDiv.textContent = message;
+      chatContainer.appendChild(messageDiv);
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+    async function submitAnswer(answer) {
+    const response = await fetch("/ask", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            resume: resumeText,
+            job: jobTitle,
+            history: [...history, answer],
+            scores: scoresArray
+        })
+    });
+
+    const data = await response.json();
+
+    // Update history
+    history.push(answer);
+
+    // Store score
+    if(data.score !== undefined){
+        scoresArray.push(data.score);
+    }
+
+    // Display next question
+    document.getElementById("question").innerText = data.question;
+
+    // Display feedback and current score
+    if(data.feedback){
+        document.getElementById("feedback").innerText = `Feedback: ${data.feedback}`;
+    }
+
+    document.getElementById("average-score").innerText = `Average Score: ${data.average_score || 0}`;
+}
+
+  </script>
+</body>
+</html>

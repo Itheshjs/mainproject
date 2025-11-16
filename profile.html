@@ -1,6 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Profile</title>
     <link rel="stylesheet" href="style.css">
     <style>
@@ -62,6 +65,41 @@
                 padding: 12px 4vw 6px 4vw;
             }
         }
+        .resource-card {
+            margin-top: 24px;
+            padding: 24px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            text-align: left;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+        }
+        .resource-card h3 {
+            margin: 0 0 12px 0;
+            font-size: 1.5rem;
+            color: #2d3a4a;
+            font-weight: 500;
+        }
+        .resource-card p {
+            margin: 8px 0;
+            font-size: 1rem;
+            color: #3a4a5d;
+        }
+        .resource-card ul {
+            margin: 8px 0 12px 20px;
+            color: #3a4a5d;
+        }
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #0078d4;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+        .btn:hover {
+            background: #0056a3;
+        }
     </style>
 </head>
 <body>
@@ -76,6 +114,21 @@
             <p><span class="profile-label">Location:</span> <span id="profile-location"></span></p>
             <p><span class="profile-label">Career Goal:</span> <span id="profile-careergoal"></span></p>
             <p><span class="profile-label">Preferred Technologies:</span> <span id="profile-technologies"></span></p>
+        </div>
+        <h2>Master Your Interview Skills</h2>
+        <p>Get expert guidance and practice with our AI-powered interview preparation assistant.</p>
+
+        <div class="resource-card">
+            <h3>Try Job Interview Preparation Boot (powered by Gemini AI)</h3>
+            <p>Experience a smart, interactive interview simulation—just like ChatGPT, but tailored for job interviews!<br>
+            <ul>
+                <li>Personalized questions based on your career goal and technology</li>
+                <li>Real-time feedback and explanations</li>
+                <li>Practice MCQs, technical, and HR rounds</li>
+                <li>Unique questions every session</li>
+            </ul>
+            <a href="practice.html" class="btn">Start Interview Boot</a>
+            </p>
         </div>
     </div>
     <script src="profile.js"></script>

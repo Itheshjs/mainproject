@@ -9,7 +9,7 @@ const closeChatbot = document.querySelector("#close-chatbot");
 const advancedModeButton = document.querySelector("#advanced-mode");
 // API setup
 const API_KEY = "AIzaSyC3IkDvwqAtlLO5cdrRx9ZEr0z0X_gWH3k";
-const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+const API_URL = `http://localhost:3000/api/gemini-generate`;
 // Initialize user message and file data
 const userData = {
   message: null,
@@ -23,7 +23,57 @@ const chatHistory = [];
 const initialInputHeight = messageInput.scrollHeight;
 // CSV data storage
 let csvData = [];
+let fuse = null; // Fuse.js instance for fuzzy matching
 let isAdvancedMode = false;
+let currentChatSessionId = null;
+let CHAT_LOCAL = false;
+// Alias mapping for paraphrases → canonical question (normalized)
+let aliasMap = {};
+const normalizeText = (text) => String(text || '')
+  .toLowerCase()
+  .replace(/[^a-z0-9\s]/g, ' ')
+  .replace(/\s+/g, ' ')
+  .trim();
+function addQuestionAlias(canonicalQuestion, aliases) {
+  const canon = normalizeText(canonicalQuestion);
+  (aliases || []).forEach(a => {
+    const key = normalizeText(a);
+    if (key) aliasMap[key] = canon;
+  });
+}
+// Parse a single CSV line respecting quoted commas
+const parseCSVLine = (line) => {
+  const fields = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    if (char === '"') {
+      // Handle escaped quotes within quoted field
+      if (inQuotes && i + 1 < line.length && line[i + 1] === '"') {
+        current += '"';
+        i++; // Skip the escaped quote
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (char === ',' && !inQuotes) {
+      fields.push(current);
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  fields.push(current);
+  // Trim spaces and surrounding quotes
+  return fields.map(f => {
+    let v = f.trim();
+    if (v.startsWith('"') && v.endsWith('"')) {
+      v = v.slice(1, -1).replace(/""/g, '"');
+    }
+    return v;
+  });
+};
+
 // Load CSV data
 const loadCSVData = async () => {
   try {
@@ -35,47 +85,90 @@ const loadCSVData = async () => {
     const csvText = await response.text();
     console.log('Raw CSV text:', csvText);
     
-    const rows = csvText.split('\n').filter(row => row.trim() !== '');
+    const rows = csvText.split(/\r?\n/).filter(row => row.trim() !== '');
     console.log('Number of rows after filtering:', rows.length);
     
+    const normalize = (text) => text
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, ' ') // remove punctuation
+      .replace(/\s+/g, ' ') // collapse whitespace
+      .trim();
+
     csvData = rows.map(row => {
-      // Handle both formats
-      let question, answer;
-      
-      if (row.includes('Question Number')) {
-        // Skip header row for software development questions
-        return null;
-      }
-      
-      if (row.includes('#')) {
-        // Skip section headers
-        return null;
-      }
-      
-      const parts = row.split(',').map(item => item.trim());
-      
-      if (parts.length === 2) {
-        // Original format: question,answer
-        [question, answer] = parts;
-      } else if (parts.length >= 3) {
-        // Software development format: Question Number,Question,Answer,Category,Difficulty
-        question = parts[1];
-        answer = parts[2];
+      // Skip comment/section headers
+      if (row.trim().startsWith('#')) return null;
+
+      // Parse respecting quotes
+      const parts = parseCSVLine(row);
+
+      // Skip header rows - check both "question" and "Question" (case-insensitive)
+      if (parts[0] && parts[0].toLowerCase() === 'question') return null;
+      if (row.includes('Question Number') && parts[0] === 'Question Number') return null;
+
+      // Filter out empty parts from trailing commas
+      const nonEmptyParts = parts.filter(p => p.trim() !== '');
+
+      let question;
+      let answer;
+
+      // Software development format with leading numeric id
+      if (nonEmptyParts.length >= 3 && /^\d+$/.test(nonEmptyParts[0])) {
+        question = nonEmptyParts[1];
+        answer = nonEmptyParts[2];
+      } else if (nonEmptyParts.length >= 2) {
+        // Generic question,answer format
+        question = nonEmptyParts[0];
+        answer = nonEmptyParts[1];
       } else {
         console.warn('Skipping invalid row:', row);
         return null;
       }
+
+      // Trim and validate question and answer
+      question = question ? question.trim() : '';
+      answer = answer ? answer.trim() : '';
       
       if (!question || !answer) {
         console.warn('Skipping row with missing data:', row);
         return null;
       }
-      
+
       console.log('Processing row:', { question, answer });
-      return { question: question.toLowerCase(), answer };
+      return { question: question.toLowerCase(), question_normalized: normalize(question), answer };
     }).filter(item => item !== null);
     
     console.log('Final CSV data loaded:', csvData);
+
+    // Register default aliases so paraphrases map to the same canonical question
+    addQuestionAlias('tell me about yourself', [
+      'please give me a brief about yourself',
+      'give me a brief about yourself',
+      'brief about yourself',
+      'introduce yourself'
+    ]);
+
+    // Initialize Fuse.js for fuzzy matching if available
+    try {
+      if (window.Fuse && Array.isArray(csvData) && csvData.length > 0) {
+        const fuseOptions = {
+          includeScore: true,
+          threshold: 0.45, // lower = stricter; adjust for recall vs precision
+          distance: 200,
+          keys: [
+            { name: 'question', weight: 0.5 },
+            { name: 'question_normalized', weight: 0.5 }
+          ],
+          ignoreLocation: true,
+          minMatchCharLength: 2,
+        };
+        fuse = new window.Fuse(csvData, fuseOptions);
+        console.log('Fuse initialized for fuzzy matching.');
+      } else {
+        console.warn('Fuse.js not available; using fallback matching.');
+      }
+    } catch (e) {
+      console.warn('Failed to init Fuse:', e);
+    }
     
     if (csvData.length === 0) {
       throw new Error('No valid questions found in CSV');
@@ -112,6 +205,128 @@ const createMessageElement = (content, ...classes) => {
   div.innerHTML = content;
   return div;
 };
+
+// Persist chat message to backend
+async function persistChat(role, text) {
+  try {
+    if (CHAT_LOCAL) {
+      localPersistChat(role, text);
+      return;
+    }
+    const resp = await fetch('http://localhost:3000/api/chat-history', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ role, text, timestamp: new Date().toISOString(), sessionId: currentChatSessionId })
+    });
+    if (resp.status === 401) { switchToLocalChat(); localPersistChat(role, text); }
+  } catch (e) { /* ignore */ }
+}
+
+// Load chat sessions and messages
+async function loadChatSessions() {
+  const list = document.getElementById('chat-sessions');
+  if (!list) return;
+  list.innerHTML = '<li style="color:#6b7280; padding:6px;">Loading…</li>';
+  try {
+    if (CHAT_LOCAL) { loadChatSessionsLocal(); return; }
+    const res = await fetch('http://localhost:3000/api/chat-sessions', { credentials: 'include' });
+    const data = await res.json();
+    if (res.status === 401) { switchToLocalChat(); loadChatSessionsLocal(); return; }
+    if (!data.success || !Array.isArray(data.sessions)) throw new Error();
+    list.innerHTML = '';
+    data.sessions.forEach(s => {
+      const li = document.createElement('li');
+      li.style.padding = '8px';
+      li.style.border = '1px solid #e5e7eb';
+      li.style.borderRadius = '8px';
+      li.style.cursor = 'pointer';
+      li.textContent = s.title || new Date(s.createdAt).toLocaleString();
+      li.addEventListener('click', () => {
+        currentChatSessionId = s._id;
+        loadChatHistory();
+      });
+      list.appendChild(li);
+      if (!currentChatSessionId) currentChatSessionId = s._id;
+    });
+    if (currentChatSessionId) loadChatHistory();
+  } catch (_) {
+    switchToLocalChat();
+    loadChatSessionsLocal();
+  }
+}
+
+async function ensureSession(titleHint) {
+  if (currentChatSessionId) return currentChatSessionId;
+  try {
+    if (CHAT_LOCAL) { currentChatSessionId = localEnsureSession(titleHint); return currentChatSessionId; }
+    const res = await fetch('http://localhost:3000/api/chat-sessions', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+      body: JSON.stringify({ title: titleHint || 'New chat' })
+    });
+    const data = await res.json();
+    if (res.status === 401) { switchToLocalChat(); currentChatSessionId = localEnsureSession(titleHint); return currentChatSessionId; }
+    if (data.success && data.session) {
+      currentChatSessionId = data.session._id;
+    }
+  } catch (_) {}
+  return currentChatSessionId;
+}
+
+// Render messages for current session
+async function loadChatHistory() {
+  const list = document.getElementById('chat-history-list');
+  if (!list) return;
+  list.innerHTML = '<li style="color:#6b7280; padding:6px;">Loading…</li>';
+  try {
+    if (!currentChatSessionId) { list.innerHTML=''; return; }
+    if (CHAT_LOCAL) { loadChatHistoryLocal(); return; }
+    const res = await fetch('http://localhost:3000/api/chat-history?sessionId=' + encodeURIComponent(currentChatSessionId), { credentials: 'include' });
+    const data = await res.json();
+    if (res.status === 401) { switchToLocalChat(); return; }
+    if (!data.success || !Array.isArray(data.messages)) throw new Error();
+    // Build Q/A pairs and render only questions; expand to show answer on click
+    list.innerHTML = '';
+    const msgs = data.messages;
+    for (let i = 0; i < msgs.length; i++) {
+      if (msgs[i].role !== 'user') continue;
+      const q = msgs[i];
+      const a = (i + 1 < msgs.length && msgs[i + 1].role === 'bot') ? msgs[i + 1] : null;
+      const li = document.createElement('li');
+      li.style.padding = '10px';
+      li.style.border = '1px solid #e5e7eb';
+      li.style.borderRadius = '8px';
+      li.style.background = '#f8fafc';
+      li.style.cursor = 'pointer';
+      const ts = q.timestamp ? new Date(q.timestamp).toLocaleString() : '';
+      const title = document.createElement('div');
+      title.style.fontWeight = '600';
+      title.style.color = '#111827';
+      title.textContent = q.text.length > 80 ? q.text.slice(0, 80) + '…' : q.text;
+      const meta = document.createElement('div');
+      meta.style.color = '#6b7280';
+      meta.style.fontSize = '12px';
+      meta.textContent = ts;
+      const detail = document.createElement('div');
+      detail.style.display = 'none';
+      detail.style.marginTop = '8px';
+      detail.style.padding = '8px';
+      detail.style.background = '#ffffff';
+      detail.style.border = '1px solid #dcfce7';
+      detail.style.borderRadius = '6px';
+      detail.textContent = a ? a.text : 'No answer yet.';
+      li.appendChild(title);
+      li.appendChild(meta);
+      li.appendChild(detail);
+      li.addEventListener('click', () => {
+        detail.style.display = (detail.style.display === 'none') ? 'block' : 'none';
+      });
+      list.appendChild(li);
+    }
+  } catch (_) {
+    list.innerHTML = '<li style="color:#b91c1c; padding:6px;">Unable to load history.</li>';
+  }
+}
 // Check if message is job interview related
 const isJobInterviewRelated = (message) => {
   const interviewKeywords = [
@@ -137,54 +352,103 @@ const findBestMatch = (userQuestion) => {
   }
 
   const userQuestionLower = userQuestion.toLowerCase().trim();
+  const normalize = (text) => text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ') // remove punctuation
+    .replace(/\s+/g, ' ')
+    .trim();
+  const userNormalized = normalize(userQuestion);
+
+  // Alias check (guaranteed mapping when defined)
+  try {
+    const aliasCanon = aliasMap[normalizeText(userQuestion)];
+    if (aliasCanon && Array.isArray(csvData)) {
+      const aliased = csvData.find(item => item && item.question_normalized === aliasCanon);
+      if (aliased) {
+        console.log('Alias matched to canonical question:', aliasCanon, aliased);
+        return aliased;
+      }
+    }
+  } catch (_) {}
+  // Build candidate inputs from multi-line text
+  const candidateInputs = [userQuestion]
+    .concat(userQuestion.split(/\r?\n/))
+    .map(t => t.trim())
+    .filter((t, idx, arr) => t.length > 0 && arr.indexOf(t) === idx);
   let bestMatch = null;
   let highestScore = 0;
 
   console.log('Current CSV data:', csvData);
   console.log('Searching for match for:', userQuestionLower);
 
-  // First try exact match
-  const exactMatch = csvData.find(item => item.question.toLowerCase() === userQuestionLower);
-  if (exactMatch) {
-    console.log('Found exact match:', exactMatch);
-    return exactMatch;
-  }
+  // If Fuse is ready, try fuzzy matching first
+  try {
+    if (fuse) {
+      const results = fuse.search(userNormalized);
+      if (Array.isArray(results) && results.length > 0) {
+        const top = results[0];
+        // Convert score (0 best) into confidence and gate it
+        const score = typeof top.score === 'number' ? top.score : 1;
+        const confidence = 1 - Math.min(Math.max(score, 0), 1);
+        console.log('Fuse top result:', top, 'confidence:', confidence);
+        if (confidence >= 0.55) {
+          return top.item;
+        }
+      }
+    }
+  } catch (e) { console.warn('Fuse search failed, falling back:', e); }
 
-  // If no exact match, try partial match
-  csvData.forEach(item => {
-    const questionWords = item.question.toLowerCase().split(' ');
-    const userWords = userQuestionLower.split(' ');
-    
-    // Calculate score based on word matches and word order
-    let score = 0;
-    userWords.forEach((word, index) => {
-      if (questionWords.includes(word)) {
-        score += 2; // Exact word match
-      } else {
-        // Check for partial matches
-        questionWords.forEach(qWord => {
-          if (qWord.includes(word) || word.includes(qWord)) {
-            score += 1; // Partial word match
-          }
-        });
+  // Evaluate each candidate line separately (fallback heuristic)
+  for (const candidate of candidateInputs) {
+    const candidateLower = candidate.toLowerCase().trim();
+    const candidateNormalized = normalize(candidate);
+
+    // Exact match (strict)
+    const exactMatch = csvData.find(item => item.question.toLowerCase() === candidateLower);
+    if (exactMatch) {
+      console.log('Found exact match for candidate:', candidate, exactMatch);
+      return exactMatch;
+    }
+
+    // Normalized exact match
+    const normalizedExact = csvData.find(item => item.question_normalized === candidateNormalized);
+    if (normalizedExact) {
+      console.log('Found normalized exact match for candidate:', candidate, normalizedExact);
+      return normalizedExact;
+    }
+
+    // Partial match scoring
+    csvData.forEach(item => {
+      const questionWords = item.question_normalized.split(' ');
+      const userWords = candidateNormalized.split(' ');
+      
+      let score = 0;
+      userWords.forEach((word) => {
+        if (questionWords.includes(word)) {
+          score += 2;
+        } else {
+          questionWords.forEach(qWord => {
+            if (qWord.length >= 4 && word.length >= 4 && (qWord.includes(word) || word.includes(qWord))) {
+              score += 1;
+            }
+          });
+        }
+      });
+
+      // Bonus points for matching first words and key phrases
+      if (userWords[0] === questionWords[0]) score += 3;
+      if (item.question_normalized.includes('prepare for a job interview') && candidateNormalized.includes('prepare for a job interview')) score += 5;
+
+      if (score > highestScore) {
+        highestScore = score;
+        bestMatch = item;
       }
     });
-
-    // Bonus points for matching first words
-    if (userWords[0] === questionWords[0]) {
-      score += 3;
-    }
-
-    console.log('Comparing with:', item.question, 'Score:', score);
-    
-    if (score > highestScore) {
-      highestScore = score;
-      bestMatch = item;
-    }
-  });
+  }
 
   console.log('Best match:', bestMatch, 'Score:', highestScore);
-  return highestScore >= 2 ? bestMatch : null;
+  // Require a higher threshold to avoid irrelevant matches
+  return highestScore >= 4 ? bestMatch : null;
 };
 // Generate bot response using API or CSV
 const generateBotResponse = async (incomingMessageDiv) => {
@@ -240,6 +504,7 @@ const generateBotResponse = async (incomingMessageDiv) => {
       
       const apiResponseText = data.candidates[0].content.parts[0].text.replace(/\*\*(.*?)\*\*/g, "$1").trim();
       messageElement.innerText = apiResponseText;
+      persistChat('bot', apiResponseText);
       
       chatHistory.push({
         role: "model",
@@ -258,8 +523,10 @@ const generateBotResponse = async (incomingMessageDiv) => {
     
     if (match) {
       messageElement.innerText = match.answer;
+      persistChat('bot', match.answer);
     } else {
       messageElement.innerText = "I'm sorry, I couldn't find a relevant answer in my database. Try switching to Advanced mode for more comprehensive responses.";
+      persistChat('bot', "I'm sorry, I couldn't find a relevant answer in my database. Try switching to Advanced mode for more comprehensive responses.");
     }
   }
 
@@ -268,7 +535,7 @@ const generateBotResponse = async (incomingMessageDiv) => {
   chatBody.scrollTo({ top: chatBody.scrollHeight, behavior: "smooth" });
 };
 // Handle outgoing message
-const handleOutgoingMessage = (e) => {
+const handleOutgoingMessage = async (e) => {
   e.preventDefault();
   const message = messageInput.value.trim();
   
@@ -284,6 +551,8 @@ const handleOutgoingMessage = (e) => {
   const outgoingMessageDiv = createMessageElement(messageContent, "user-message");
   chatBody.appendChild(outgoingMessageDiv);
   chatBody.scrollTo({ top: chatBody.scrollHeight, behavior: "smooth" });
+  await ensureSession(message.slice(0, 40));
+  persistChat('user', message);
 
   // Clear input and file data
   messageInput.value = "";
@@ -373,8 +642,21 @@ const picker = new EmojiMart.Picker({
 });
 document.querySelector(".chat-form").appendChild(picker);
 document.querySelector("#file-upload").addEventListener("click", () => fileInput.click());
-closeChatbot.addEventListener("click", () => document.body.classList.remove("show-chatbot"));
+closeChatbot.addEventListener("click", () => {
+  document.body.classList.remove("show-chatbot");
+  document.body.classList.remove("chatbot-fullscreen");
+});
 chatbotToggler.addEventListener("click", () => document.body.classList.toggle("show-chatbot"));
+
+// Back button inside chat header to exit fullscreen/chat
+const backHomeBtn = document.getElementById('chat-back-home');
+if (backHomeBtn) {
+  backHomeBtn.addEventListener('click', () => {
+    document.body.classList.remove('show-chatbot');
+    document.body.classList.remove('chatbot-fullscreen');
+    try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (_) {}
+  });
+}
 
 // Profile Button Functionality
 const profileBtn = document.getElementById('profile-btn');
@@ -413,14 +695,20 @@ async function checkUserLogin() {
   }
 }
 
-// Redirect to profile.html and store user data
+// Redirect to profile.html after verifying session live
 if (profileBtn) {
-  profileBtn.addEventListener('click', function(e) {
+  profileBtn.addEventListener('click', async function(e) {
     e.preventDefault();
-    if (window.userProfileData) {
-      localStorage.setItem('profileUser', JSON.stringify(window.userProfileData));
-      window.location.href = 'profile.html';
-    } else {
+    try {
+      const res = await fetch('http://localhost:3000/api/profile', { credentials: 'include' });
+      const result = await res.json();
+      if (result && result.success && result.user) {
+        try { localStorage.setItem('profileUser', JSON.stringify(result.user)); } catch (_) {}
+        window.location.href = 'profile.html';
+      } else {
+        alert('Please log in to view your profile.');
+      }
+    } catch (_) {
       alert('Please log in to view your profile.');
     }
   });
@@ -429,9 +717,195 @@ if (profileBtn) {
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
   console.log('DOM loaded, initializing profile...');
-  initializeProfile();
+  try { if (typeof initializeProfile === 'function') initializeProfile(); } catch (_) {}
   checkUserLogin();
+  // Load history if chat is already visible
+  try { if (document.body.classList.contains('show-chatbot')) loadChatSessions(); } catch (_) {}
+  const newBtn = document.getElementById('new-chat');
+  if (newBtn) newBtn.addEventListener('click', async () => { currentChatSessionId = null; await ensureSession('New chat'); loadChatSessions(); });
+
+  // Smart Practice
+  const spCard = document.getElementById('smart-practice-card');
+  const spModal = document.getElementById('sp-modal');
+  const spClose = document.getElementById('sp-close');
+  const spCareer = document.getElementById('sp-career');
+  const spTech = document.getElementById('sp-tech');
+  const spStart = document.getElementById('sp-start');
+  const spSetup = document.getElementById('sp-setup');
+  const spQuiz = document.getElementById('sp-quiz');
+  const spQwrap = document.getElementById('sp-qwrap');
+  const spNext = document.getElementById('sp-next');
+  const spResult = document.getElementById('sp-result');
+  const spScore = document.getElementById('sp-score');
+  const spReview = document.getElementById('sp-review');
+
+  let spQuestions = [];
+  let spIndex = 0;
+  let spCorrect = 0;
+  let spAnswers = [];
+
+  function openSP() { spModal.style.display = 'block'; }
+  function closeSP() { spModal.style.display = 'none'; }
+
+  function prefillProfile() {
+    try {
+      if (window.userProfileData) {
+        if (!spCareer.value) spCareer.value = window.userProfileData.careerGoal || '';
+        if (!spTech.value && Array.isArray(window.userProfileData.preferredTechnologies)) spTech.value = window.userProfileData.preferredTechnologies[0] || '';
+      }
+    } catch (_) {}
+  }
+
+  function renderQuestion() {
+    const q = spQuestions[spIndex];
+    if (!q) return;
+    spQwrap.innerHTML = '';
+    const h = document.createElement('h3'); h.textContent = `Q${spIndex+1}. ${q.question}`; spQwrap.appendChild(h);
+    if (Array.isArray(q.options)) {
+      q.options.forEach((opt, idx) => {
+        const lbl = document.createElement('label');
+        lbl.style.display = 'block'; lbl.style.margin = '8px 0';
+        const inp = document.createElement('input'); inp.type = 'radio'; inp.name = 'sp_opt'; inp.value = String(idx);
+        lbl.appendChild(inp);
+        const span = document.createElement('span'); span.textContent = ' ' + opt; lbl.appendChild(span);
+        spQwrap.appendChild(lbl);
+      });
+    }
+  }
+
+  async function startPractice() {
+    const career = spCareer.value.trim();
+    const tech = spTech.value.trim();
+    if (!career || !tech) { alert('Please provide Career Goal and Technology.'); return; }
+    try {
+      const res = await fetch('http://localhost:3000/api/generate-questions', {
+        method: 'POST', headers: { 'Content-Type':'application/json' }, credentials: 'include',
+        body: JSON.stringify({ type:'technical', careerGoal: career, technology: tech, questionCount:5 })
+      });
+      const data = await res.json();
+      if (!data.success || !Array.isArray(data.questions) || data.questions.length === 0) throw new Error();
+      spQuestions = data.questions;
+      spIndex = 0; spCorrect = 0; spAnswers = [];
+      spSetup.style.display = 'none'; spResult.style.display = 'none'; spQuiz.style.display = 'block';
+      renderQuestion();
+    } catch (_) {
+      alert('Unable to generate questions. Ensure backend is running.');
+    }
+  }
+
+  function nextQuestion() {
+    const q = spQuestions[spIndex];
+    const sel = document.querySelector('input[name="sp_opt"]:checked');
+    if (!sel) { alert('Please select an answer.'); return; }
+    const chosen = Number(sel.value);
+    const correct = typeof q.answer === 'number' ? q.answer : 0;
+    const isCorrect = chosen === correct;
+    if (isCorrect) spCorrect += 1;
+    spAnswers.push({ question: q.question, chosen, correct, options: q.options, explanation: q.explanation });
+    spIndex += 1;
+    if (spIndex < spQuestions.length) {
+      renderQuestion();
+    } else {
+      const scorePct = Math.round((spCorrect / spQuestions.length) * 100);
+      spQuiz.style.display = 'none';
+      spResult.style.display = 'block';
+      spScore.textContent = `Score: ${spCorrect}/${spQuestions.length} (${scorePct}%)`;
+      spReview.innerHTML = '';
+      spAnswers.forEach((a, i) => {
+        const li = document.createElement('li');
+        const correctText = a.options && a.options[a.correct] ? a.options[a.correct] : '';
+        const chosenText = a.options && a.options[a.chosen] ? a.options[a.chosen] : '';
+        li.textContent = `Q${i+1}: ${a.question} — Your answer: ${chosenText} | Correct: ${correctText}`;
+        if (a.explanation) { const em = document.createElement('div'); em.style.fontSize='12px'; em.style.color='#6b7280'; em.textContent = a.explanation; li.appendChild(em); }
+        spReview.appendChild(li);
+      });
+    }
+  }
+
+  if (spCard) spCard.addEventListener('click', () => { prefillProfile(); openSP(); });
+  if (spClose) spClose.addEventListener('click', closeSP);
+  if (spStart) spStart.addEventListener('click', startPractice);
+  if (spNext) spNext.addEventListener('click', nextQuestion);
 });
+
+// Local fallback storage for unauthenticated users
+function switchToLocalChat() {
+  CHAT_LOCAL = true;
+  if (!localStorage.getItem('chat_sessions')) localStorage.setItem('chat_sessions', JSON.stringify([]));
+}
+function localEnsureSession(title) {
+  let sessions = JSON.parse(localStorage.getItem('chat_sessions') || '[]');
+  const id = 'local_' + Date.now();
+  sessions.unshift({ _id: id, title: title || 'New chat', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+  localStorage.setItem('chat_sessions', JSON.stringify(sessions));
+  return id;
+}
+function loadChatSessionsLocal() {
+  const list = document.getElementById('chat-sessions');
+  const sessions = JSON.parse(localStorage.getItem('chat_sessions') || '[]');
+  list.innerHTML = '';
+  sessions.forEach(s => {
+    const li = document.createElement('li');
+    li.style.padding = '8px';
+    li.style.border = '1px solid #e5e7eb';
+    li.style.borderRadius = '8px';
+    li.style.cursor = 'pointer';
+    li.textContent = s.title;
+    li.addEventListener('click', () => { currentChatSessionId = s._id; loadChatHistoryLocal(); });
+    list.appendChild(li);
+    if (!currentChatSessionId) currentChatSessionId = s._id;
+  });
+  if (currentChatSessionId) loadChatHistoryLocal();
+}
+function localPersistChat(role, text) {
+  if (!currentChatSessionId) currentChatSessionId = localEnsureSession(text.slice(0,40));
+  const key = 'chat_msgs_' + currentChatSessionId;
+  const msgs = JSON.parse(localStorage.getItem(key) || '[]');
+  msgs.push({ role, text, timestamp: new Date().toISOString() });
+  localStorage.setItem(key, JSON.stringify(msgs));
+  loadChatHistoryLocal();
+}
+function loadChatHistoryLocal() {
+  const list = document.getElementById('chat-history-list');
+  const key = 'chat_msgs_' + currentChatSessionId;
+  const msgs = JSON.parse(localStorage.getItem(key) || '[]');
+  list.innerHTML = '';
+  for (let i = 0; i < msgs.length; i++) {
+    if (msgs[i].role !== 'user') continue;
+    const q = msgs[i];
+    const a = (i + 1 < msgs.length && msgs[i + 1].role === 'bot') ? msgs[i + 1] : null;
+    const li = document.createElement('li');
+    li.style.padding = '10px';
+    li.style.border = '1px solid #e5e7eb';
+    li.style.borderRadius = '8px';
+    li.style.background = '#f8fafc';
+    li.style.cursor = 'pointer';
+    const ts = new Date(q.timestamp).toLocaleString();
+    const title = document.createElement('div');
+    title.style.fontWeight = '600';
+    title.style.color = '#111827';
+    title.textContent = q.text.length > 80 ? q.text.slice(0, 80) + '…' : q.text;
+    const meta = document.createElement('div');
+    meta.style.color = '#6b7280';
+    meta.style.fontSize = '12px';
+    meta.textContent = ts;
+    const detail = document.createElement('div');
+    detail.style.display = 'none';
+    detail.style.marginTop = '8px';
+    detail.style.padding = '8px';
+    detail.style.background = '#ffffff';
+    detail.style.border = '1px solid #dcfce7';
+    detail.style.borderRadius = '6px';
+    detail.textContent = a ? a.text : 'No answer yet.';
+    li.appendChild(title);
+    li.appendChild(meta);
+    li.appendChild(detail);
+    li.addEventListener('click', () => {
+      detail.style.display = (detail.style.display === 'none') ? 'block' : 'none';
+    });
+    list.appendChild(li);
+  }
+}
 
 // Logout functionality
 const logoutBtn = document.getElementById('logout-btn');
@@ -469,3 +943,25 @@ document.querySelector('.login-btn').addEventListener('click', () => {
 document.querySelector('.signup-btn').addEventListener('click', () => {
   window.location.href = 'signup.html';
 });
+
+// Attach to Track Progress card: open modal implemented in index.html
+function handleTrackProgressClick(e) {
+  e.preventDefault();
+  if (typeof window.openProgressModal === 'function') {
+    window.openProgressModal();
+  } else {
+    // Fallback: navigate with query to trigger modal
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set('showProgress', '1');
+      window.location.href = url.toString();
+    } catch (_) {
+      window.location.href = 'index.html?showProgress=1';
+    }
+  }
+}
+
+const trackProgressEl = document.getElementById('track-progress-card');
+if (trackProgressEl) {
+  trackProgressEl.addEventListener('click', handleTrackProgressClick);
+}

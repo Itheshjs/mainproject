@@ -2,8 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Authentication - Interview Prep Pro</title>
   <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded" />
   <style>
     .auth-wrapper {
@@ -19,7 +21,7 @@
       box-shadow: 0 4px 6px rgba(0,0,0,0.05);
       padding: 2.5rem 2rem 2rem 2rem;
       width: 100%;
-      max-width: 450px;
+      max-width: 1200px;
       text-align: center;
     }
     .auth-logo {
@@ -85,33 +87,105 @@
       margin-bottom: 1rem;
       font-size: 1rem;
     }
-    .form-section {
-      margin-bottom: 1rem;
-      padding: 1rem;
-      background: #f8f9fa;
-      border-radius: 8px;
-      border-left: 4px solid #15803d;
-    }
-    .form-section h3 {
-      margin: 0 0 0.5rem 0;
-      color: #374151;
-      font-size: 1rem;
-      font-weight: 600;
-      text-align: left;
-    }
     .form-description {
       color: #666;
       margin-bottom: 1rem;
       font-size: 0.9rem;
     }
+    .auth-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+      align-items: stretch;
+    }
+    .form-section {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      height: 100%;
+    }
+    .form-section input,
+    .form-section select {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      font-size: 1rem;
+      background: #fff;
+      transition: all 0.2s;
+      box-sizing: border-box;
+    }
+    .form-section input:focus,
+    .form-section select:focus {
+      border: 1.5px solid #3b82f6;
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    .field-error {
+      color: #ef4444;
+      font-size: 0.875rem;
+      margin-top: -0.5rem;
+      margin-bottom: 0.25rem;
+      text-align: left;
+    }
+    .form-error {
+      color: #ef4444;
+      font-size: 0.875rem;
+      margin-bottom: 1rem;
+      padding: 0.75rem;
+      background: #fef2f2;
+      border-radius: 6px;
+      border-left: 4px solid #ef4444;
+    }
+    .password-hints {
+      list-style: none;
+      padding: 0;
+      margin: 0.5rem 0 0 0;
+      text-align: left;
+      font-size: 0.875rem;
+    }
+    .password-hints li {
+      margin: 0.25rem 0;
+      color: #64748b;
+    }
+    .password-hints small {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      color: #374151;
+    }
+    #passwordHelp {
+      margin-top: 0.5rem;
+      text-align: left;
+    }
+    @media (max-width: 968px) {
+      .auth-card {
+        max-width: 100%;
+        padding: 1.5rem;
+      }
+      .auth-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+    }
+    @media (max-width: 640px) {
+      .auth-card {
+        padding: 1rem;
+      }
+      .form-section {
+        padding: 1rem !important;
+      }
+    }
   </style>
 </head>
-<body>
+<body class="min-h-screen bg-gradient-to-br from-[#e0f2fe] via-[#f8fafc] to-[#e0f2fe]">
   <div class="auth-wrapper">
-    <div class="auth-card">
-      <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Logo" class="auth-logo" />
-      <div class="auth-title">Interview Prep Pro</div>
-      <div id="successMsg" class="success-message" style="display:none;"></div>
+    <div class="auth-card border border-slate-200 rounded-2xl shadow-2xl p-10 w-full max-w-[1200px] bg-white transition-all duration-300 ease-in-out">
+      <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Logo" class="auth-logo w-16 h-16 rounded-full shadow" />
+      <div class="auth-title text-3xl font-semibold text-blue-700">Interview Prep Pro</div>
+      <p class="text-slate-600 text-center mt-1">Create your account and start preparing for your dream job</p>
+      <div id="successMsg" class="success-message hidden"></div>
       <div id="formContainer"></div>
     </div>
   </div>
@@ -121,18 +195,18 @@
 
     function renderLoginForm() {
       formContainer.innerHTML = `
-        <form id="loginForm">
-          <h2 style="color:#1e293b;font-size:1.3rem;margin-bottom:0.5rem;">Log In</h2>
-          <p class="form-description">Enter your credentials to access your account</p>
+        <form id="loginForm" class="space-y-5">
+          <h2 class="auth-heading text-2xl font-semibold text-slate-800">Log In</h2>
+          <p class="form-description text-slate-600">Enter your credentials to access your account</p>
           
-          <div class="form-section">
-            <h3>Authentication</h3>
-            <input type="email" name="email" placeholder="Email" required />
-            <input type="password" name="password" placeholder="Password" required />
+          <div class="form-section border border-slate-200 rounded-2xl p-5 bg-slate-50">
+            <h3 class="text-sm font-medium text-slate-700 mb-3 font-semibold">Authentication</h3>
+            <input class="w-full rounded-lg border border-slate-300 p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white" type="email" name="email" placeholder="Email" required autocomplete="email" pattern="^[a-zA-Z0-9._%+\-]+@gmail\.com$" title="Use a Gmail address like name@gmail.com" />
+            <input class="w-full rounded-lg border border-slate-300 p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white" type="password" name="password" placeholder="Password" required autocomplete="current-password" />
           </div>
           
-          <button type="submit">Log In</button>
-          <p>Don't have an account? <span class="toggle-link" id="showSignup">Sign Up</span></p>
+          <button type="submit" class="w-full rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-semibold text-lg py-3 shadow-md hover:shadow-lg transition-all transform hover:scale-105">Log In</button>
+          <p class="text-center text-slate-600">Don't have an account? <span class="toggle-link text-blue-600 hover:underline cursor-pointer" id="showSignup">Sign Up</span></p>
         </form>
       `;
       document.getElementById('showSignup').onclick = (e) => {
@@ -143,6 +217,12 @@
       document.getElementById('loginForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const form = e.target;
+        const emailVal = String(form.email.value || '').trim();
+        const isGmail = /^[a-zA-Z0-9._%+-]+@gmail\.com$/.test(emailVal);
+        if (!isGmail) {
+          alert('Only Gmail addresses are allowed (e.g., name@gmail.com).');
+          return;
+        }
         
         const data = {
           email: form.email.value,
@@ -170,30 +250,48 @@
 
     function renderSignupForm() {
       formContainer.innerHTML = `
-        <form id="signupForm">
-          <h2 style="color:#1e293b;font-size:1.3rem;margin-bottom:0.5rem;">Sign Up</h2>
-          <p class="form-description">Create your account and set up your job preparation profile</p>
+        <form id="signupForm" class="space-y-5">
+          <h2 class="auth-heading text-3xl font-semibold text-slate-900">Sign Up</h2>
+          <p class="form-description text-slate-600">Create your account and set up your job preparation profile</p>
           
-          <div class="form-section">
-            <h3>Personal Information</h3>
-            <input type="text" name="username" placeholder="Username" required />
-            <input type="text" name="fullName" placeholder="Full Name" required />
-            <input type="email" name="email" placeholder="Email" required />
-            <input type="password" name="password" placeholder="Password" required />
-            <input type="tel" name="phone" placeholder="Phone (optional)" />
+          <div class="auth-grid">
+          <div class="form-section border border-slate-200 rounded-2xl p-6 bg-slate-50" id="personalInfo">
+            <h3 class="text-sm font-medium text-slate-700 mb-3 font-semibold">Personal Information</h3>
+            <input type="text" name="username" placeholder="Username" required autocomplete="username" pattern="^[A-Za-z]+$" title="Letters only (A-Z, a-z)" class="w-full" />
+            <div id="usernameError" class="field-error"></div>
+            <input type="text" name="fullName" placeholder="Full Name" required autocomplete="name" class="w-full" />
+            <input type="email" name="email" placeholder="Email" required autocomplete="email" pattern="^[a-zA-Z0-9._%+\\-]+@gmail\\.com$" title="Use a Gmail address like name@gmail.com" class="w-full" />
+            <div id="emailError" class="field-error"></div>
+            <input type="password" name="password" placeholder="Password" required autocomplete="new-password" minlength="8" pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{8,}$" title="Min 8 chars, include uppercase, lowercase, number, and special character" class="w-full" />
+            <div id="passwordHelp">
+              <small class="text-sm font-semibold text-slate-700">Password must include:</small>
+              <ul id="passwordHints" class="password-hints">
+                <li id="hint-length">At least 8 characters</li>
+                <li id="hint-lower">At least one lowercase letter</li>
+                <li id="hint-upper">At least one uppercase letter</li>
+                <li id="hint-number">At least one number</li>
+                <li id="hint-special">At least one special character (@#$%^&*! etc.)</li>
+              </ul>
+            </div>
+            <div id="passwordError" class="field-error"></div>
+            <input type="tel" name="phone" placeholder="Phone" autocomplete="tel" inputmode="numeric" pattern="^\\d{10}$" minlength="10" maxlength="10" title="Enter exactly 10 digits" class="w-full" />
+            <div id="phoneError" class="field-error"></div>
           </div>
           
-          <div class="form-section">
-            <h3>Job Preparation Details</h3>
-            <select name="usertype" required>
+          <div class="form-section border border-slate-200 rounded-2xl p-6 bg-slate-50" id="jobDetails">
+            <h3 class="text-sm font-medium text-slate-700 mb-3 font-semibold">Job Preparation Details</h3>
+            <select name="usertype" required class="w-full">
               <option value="">Select User Type</option>
               <option value="student">Student</option>
               <option value="professional">Professional</option>
               <option value="jobseeker">Job Seeker</option>
             </select>
-            <input type="text" name="location" placeholder="Location (City, Country)" required />
-            <input type="text" name="careerGoal" placeholder="Career Goal (e.g., Software Engineer)" required />
-            <select name="preferredTechnologies" multiple required>
+            <div id="usertypeError" class="field-error"></div>
+            <input type="text" name="location" placeholder="Location (City, Country)" required autocomplete="address-level2" class="w-full" />
+            <div id="locationError" class="field-error"></div>
+            <input type="text" name="careerGoal" placeholder="Career Goal (e.g., Software Engineer)" required autocomplete="organization-title" class="w-full" />
+            <div id="careerGoalError" class="field-error"></div>
+            <select name="preferredTechnologies" multiple required class="w-full min-h-[120px]">
               <option value="">Select Preferred Technologies (Hold Ctrl/Cmd to select multiple)</option>
               <option value="Python">Python</option>
               <option value="Java">Java</option>
@@ -206,10 +304,13 @@
               <option value="DevOps">DevOps</option>
               <option value="Mobile Development">Mobile Development</option>
             </select>
+            <div id="technologiesError" class="field-error"></div>
+          </div>
           </div>
           
-          <button type="submit">Sign Up</button>
-          <p>Already have an account? <span class="toggle-link" id="showLogin">Log In</span></p>
+          <div id="formError" class="field-error form-error"></div>
+          <button type="submit" class="w-full rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-semibold text-lg py-3 shadow-md hover:shadow-lg transition-all transform hover:scale-105">Sign Up</button>
+          <p class="text-center text-slate-600">Already have an account? <span class="toggle-link text-blue-600 hover:underline cursor-pointer" id="showLogin">Log In</span></p>
         </form>
       `;
       document.getElementById('showLogin').onclick = (e) => {
@@ -220,6 +321,84 @@
       document.getElementById('signupForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const form = e.target;
+        const emailError = document.getElementById('emailError');
+        const usernameError = document.getElementById('usernameError');
+        const passwordError = document.getElementById('passwordError');
+        const formError = document.getElementById('formError');
+        if (emailError) emailError.textContent = '';
+        if (usernameError) usernameError.textContent = '';
+        if (passwordError) passwordError.textContent = '';
+        if (formError) formError.textContent = '';
+        // Validate email/password
+        // Normalize email: trim and lowercase domain
+        const rawEmail = String(form.email.value || '');
+        const emailParts = rawEmail.trim().split('@');
+        const normalizedEmail = emailParts.length === 2 ? `${emailParts[0]}@${emailParts[1].toLowerCase()}` : rawEmail.trim();
+        form.email.value = normalizedEmail;
+        const email = normalizedEmail;
+        const password = String(form.password.value || '');
+        const username = String(form.username.value || '').trim();
+        const phone = String(form.phone.value || '').trim();
+        const isValidEmail = /^[a-zA-Z0-9._%+-]+@gmail\.com$/.test(email);
+        const okLen = password.length >= 8;
+        const okLower = /[a-z]/.test(password);
+        const okUpper = /[A-Z]/.test(password);
+        const okNum = /\d/.test(password);
+        const okSpec = /[^A-Za-z0-9]/.test(password);
+        form.email.setCustomValidity('');
+        form.password.setCustomValidity('');
+        form.username.setCustomValidity('');
+        form.phone.setCustomValidity('');
+        if (!isValidEmail) {
+          form.email.setCustomValidity('Use a Gmail address like name@gmail.com');
+          if (emailError) emailError.textContent = 'Only Gmail addresses are allowed (e.g., name@gmail.com).';
+        }
+        if (!(okLen && okLower && okUpper && okNum && okSpec)) {
+          form.password.setCustomValidity('Min 8 chars; include uppercase, lowercase, number, and special character');
+          if (passwordError) passwordError.textContent = 'Weak password — meet all requirements above.';
+        }
+        // Username: letters only
+        if (!/^([A-Za-z])+$/g.test(username)) {
+          form.username.setCustomValidity('Letters only');
+          if (usernameError) usernameError.textContent = 'Username must contain letters only (A-Z, a-z).';
+        }
+        // Phone: optional; if provided, exactly 10 digits
+        if (phone.length > 0 && !/^\d{10}$/.test(phone)) {
+          form.phone.setCustomValidity('Enter exactly 10 digits');
+          const phoneError = document.getElementById('phoneError');
+          if (phoneError) phoneError.textContent = 'Phone must be exactly 10 digits.';
+        }
+        if (!form.checkValidity()) {
+          form.reportValidity();
+          return;
+        }
+
+        // Pre-check duplicates for phone and password to avoid creating then failing
+        try {
+          const precheck = await fetch('http://localhost:3000/api/check-duplicates', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phone: phone, password: password })
+          }).then(r => r.json()).catch(() => ({ success: false }));
+          if (precheck && precheck.success) {
+            let blocked = false;
+            if (precheck.phoneExists) {
+              const pe = document.getElementById('phoneError');
+              if (pe) pe.textContent = 'Phone already exists — try logging in.';
+              form.phone.setCustomValidity('Phone already exists');
+              blocked = true;
+            }
+            if (precheck.passwordExists) {
+              if (passwordError) passwordError.textContent = 'Password already exists — try logging in.';
+              form.password.setCustomValidity('Password already exists');
+              blocked = true;
+            }
+            if (blocked) {
+              form.reportValidity();
+              return;
+            }
+          }
+        } catch (_) {}
         
         // Get selected technologies
         const technologySelect = form.preferredTechnologies;
@@ -230,11 +409,14 @@
           }
         }
         
+        // Normalize phone to digits before sending
+        const normalizedPhone = phone.replace(/\D/g, '');
+        form.phone.value = normalizedPhone;
         const data = {
           username: form.username.value,
           fullName: form.fullName.value,
           usertype: form.usertype.value,
-          phone: form.phone.value || '',
+          phone: normalizedPhone,
           email: form.email.value,
           password: form.password.value,
           location: form.location.value,
@@ -242,25 +424,130 @@
           preferredTechnologies: selectedTechnologies
         };
         
+        const submitBtn = form.querySelector('button[type="submit"]');
+        if (submitBtn) submitBtn.disabled = true;
         try {
           const res = await fetch('http://localhost:3000/api/signup', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
           });
-          const result = await res.json();
-          if (result.success) {
+          const result = await res.json().catch(() => ({ success: false, message: 'Invalid server response' }));
+          if (res.ok && result && result.success === true) {
             form.reset();
             renderLoginForm();
             successMsg.textContent = 'Sign up successful! Please log in.';
             successMsg.style.display = '';
           } else {
-            alert(result.message);
+            const msg = String((result && result.message) || 'Signup failed');
+            if (/email already exists/i.test(msg)) {
+              if (emailError) emailError.textContent = 'Email already exists — try logging in.';
+            } else if (/phone already exists/i.test(msg)) {
+              const phoneError = document.getElementById('phoneError');
+              if (phoneError) phoneError.textContent = 'Phone already exists — try logging in.';
+            } else if (/password already exists/i.test(msg)) {
+              if (passwordError) passwordError.textContent = 'Password already exists — try logging in.';
+            } else if (/email/i.test(msg)) {
+              if (emailError) emailError.textContent = msg;
+            } else if (/password/i.test(msg)) {
+              if (passwordError) passwordError.textContent = msg;
+            } else {
+              if (formError) formError.textContent = msg;
+            }
           }
         } catch (error) {
-          alert('Error connecting to server. Please try again.');
+          if (formError) formError.textContent = 'Network error — please try again.';
+        } finally {
+          if (submitBtn) submitBtn.disabled = false;
         }
       });
+
+      // Real-time validation
+      const formEl = document.getElementById('signupForm');
+      const emailInput = formEl.email;
+      const passwordInput = formEl.password;
+      const usernameInput = formEl.username;
+      const phoneInput = formEl.phone;
+      const emailHint = document.getElementById('emailHint');
+      const hintLen = document.getElementById('hint-length');
+      const hintLower = document.getElementById('hint-lower');
+      const hintUpper = document.getElementById('hint-upper');
+      const hintNum = document.getElementById('hint-number');
+      const hintSpec = document.getElementById('hint-special');
+
+      function setItemState(el, ok) {
+        if (!el) return;
+        el.style.color = ok ? 'green' : 'inherit';
+        el.textContent = el.textContent.replace(/^✅\s*|^\u2713\s*|^\u274C\s*|^❌\s*/, '');
+        el.textContent = (ok ? '✅ ' : '❌ ') + el.textContent;
+      }
+
+      function updateEmailHint() {
+        // Normalize email field while typing
+        const raw = String(emailInput.value || '');
+        const parts = raw.trim().split('@');
+        const normalized = parts.length === 2 ? `${parts[0]}@${parts[1].toLowerCase()}` : raw.trim();
+        emailInput.value = normalized;
+        const val = normalized;
+        const ok = /^[a-zA-Z0-9._%+-]+@gmail\.com$/.test(val);
+        const emailError = document.getElementById('emailError');
+        const formError = document.getElementById('formError');
+        if (emailError) emailError.textContent = ok ? '' : emailError.textContent;
+        if (formError) formError.textContent = '';
+        emailInput.setCustomValidity('');
+        if (!ok && val.length > 0) {
+          emailInput.setCustomValidity('Use a Gmail address like name@gmail.com');
+        }
+      }
+
+      function updatePasswordHints() {
+        const val = String(passwordInput.value || '');
+        const okLen = val.length >= 8;
+        const okLower = /[a-z]/.test(val);
+        const okUpper = /[A-Z]/.test(val);
+        const okNum = /\d/.test(val);
+        const okSpec = /[^A-Za-z0-9]/.test(val);
+        setItemState(hintLen, okLen);
+        setItemState(hintLower, okLower);
+        setItemState(hintUpper, okUpper);
+        setItemState(hintNum, okNum);
+        setItemState(hintSpec, okSpec);
+        const passwordError = document.getElementById('passwordError');
+        const formError = document.getElementById('formError');
+        if (passwordError) passwordError.textContent = '';
+        if (formError) formError.textContent = '';
+        passwordInput.setCustomValidity('');
+        if (!(okLen && okLower && okUpper && okNum && okSpec) && val.length > 0) {
+          passwordInput.setCustomValidity('Min 8 chars; include uppercase, lowercase, number, and special character');
+        }
+      }
+
+      function updateUsernameHint() {
+        const val = String(usernameInput.value || '').trim();
+        const ok = /^([A-Za-z])+$/.test(val);
+        const usernameError = document.getElementById('usernameError');
+        if (usernameError) usernameError.textContent = ok || val.length === 0 ? '' : 'Letters only (A-Z, a-z).';
+        usernameInput.setCustomValidity('');
+        if (!ok && val.length > 0) usernameInput.setCustomValidity('Letters only');
+      }
+
+      function updatePhoneHint() {
+        const val = String(phoneInput.value || '').trim();
+        const ok = val.length === 0 || /^\d{10}$/.test(val);
+        const phoneError = document.getElementById('phoneError');
+        if (phoneError) phoneError.textContent = ok ? '' : 'Phone must be exactly 10 digits.';
+        phoneInput.setCustomValidity('');
+        if (!ok) phoneInput.setCustomValidity('Enter exactly 10 digits');
+      }
+
+      emailInput && emailInput.addEventListener('input', updateEmailHint);
+      passwordInput && passwordInput.addEventListener('input', function(){ updatePasswordHints(); });
+      usernameInput && usernameInput.addEventListener('input', updateUsernameHint);
+      phoneInput && phoneInput.addEventListener('input', updatePhoneHint);
+      updateEmailHint();
+      updatePasswordHints();
+      updateUsernameHint();
+      updatePhoneHint();
     }
 
     // Show login form by default

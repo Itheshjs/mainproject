@@ -1,0 +1,4 @@
+cd C:\xampp-new\htdocs\mock-interview-bot
+>> .\.venv\Scripts\Activate.ps1
+
+python .\mock-interview-bot\app.py 

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Job Interview Prep Boot</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f4f4f9;
+      color: #333;
+    }
+
+    header {
+      background: #1f4037;
+      color: white;
+      padding: 1.5rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.8rem;
+    }
+
+    .auth-buttons {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+    }
+
+    .try-btn {
+      background: white;
+      color: #1f4037;
+      padding: 0.6rem 1.2rem;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.3s;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .try-btn:hover {
+      background: #e0f2f1;
+    }
+
+    .auth-link {
+      color: white;
+      text-decoration: none;
+      padding: 0.6rem 1.2rem;
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 1rem;
+      transition: background 0.3s;
+      border: 2px solid white;
+    }
+
+    .auth-link:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .hero {
+      text-align: center;
+      padding: 4rem 2rem;
+      background: linear-gradient(to right, #1f4037, #99f2c8);
+      color: white;
+    }
+
+    .hero h2 {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .hero p {
+      font-size: 1.2rem;
+      max-width: 600px;
+      margin: 0 auto 2rem;
+    }
+
+    .info-section {
+      padding: 3rem 2rem;
+      max-width: 900px;
+      margin: auto;
+    }
+
+    .info-section h3 {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+    }
+
+    .info-section p {
+      font-size: 1.1rem;
+      line-height: 1.6;
+    }
+
+    footer {
+      text-align: center;
+      padding: 1rem;
+      background: #1f4037;
+      color: white;
+      margin-top: 3rem;
+    }
+
+    @media (max-width: 600px) {
+      .hero h2 {
+        font-size: 2rem;
+      }
+
+      .info-section {
+        padding: 2rem 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Interview Prep Boot</h1>
+    <div class="auth-buttons">
+      <a href="auth.html" class="auth-link">Sign In</a>
+      <a href="auth.html" class="auth-link">Login</a>
+    </div>
+  </header>
+
+  <section class="hero">
+    <h2>Get Interview-Ready with Confidence</h2>
+    <p>Master coding, behavioral, and system design interviews with personalized practice and expert guidance.</p>
+    <button class="try-btn" onclick="window.location.href='auth.html'">Start Now</button>
+  </section>
+
+  <section class="info-section">
+    <h3>What is Interview Prep Boot?</h3>
+    <p>
+      Interview Prep Boot is your ultimate companion for crashing job interviews. 
+      Whether you're aiming for top tech companies or fast-growing startups, 
+      our bootcamp helps you sharpen your skills in:
+    </p>
+    <ul>
+      <li><strong>Communication and Presentation Skills:</strong> Developing effective and useful methods.</li>
+      <li><strong>Resume Analyzing:</strong> The fields that are user interested and desired work upon.</li>
+      <li><strong>Behavioral Interviews:</strong> Craft stories and frameworks for any question.</li>
+      <li><strong>Mock Interviews:</strong> Get feedback from experienced professionals.</li>
+    </ul>
+    <p>
+      <strong>Built by engineers who’ve been through the toughest interviews, we know what it takes — and we’ll help you get there. </strong>
+    </p>
+  </section>
+
+  <footer>
+    © 2025 Interview Prep Boot. All rights reserved.
+  </footer>
+
+</body>
+</html>

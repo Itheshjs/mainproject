@@ -2,20 +2,40 @@
 <!-- Coding By CodingNepal - youtube.com/@codingnepal -->
 <html lang="en">
   <head>
-  <meta charset="UTF-8">
-  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Job Interview Preparation Assistant</title>
     <!-- Linking Google fonts for icons -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@48,400,0,0&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@48,400,1,0" />
     <link rel="stylesheet" href="style.css" />
+    <style>
+      /* CTA button for chatbot */
+      .cta-chat {
+        display:inline-flex; align-items:center; justify-content:center; gap:10px;
+        padding:14px 22px; border:none; border-radius:9999px;
+        background:#16a34a; color:#fff; font-weight:700; font-size:1.05rem;
+        letter-spacing:.5px; cursor:pointer; box-shadow:0 6px 20px rgba(22,163,74,.25);
+        transition:transform .08s ease, box-shadow .2s ease, background .2s ease;
+      }
+      .cta-chat:hover { background:#15803d; box-shadow:0 10px 24px rgba(21,128,61,.35); }
+      .cta-chat:active { transform:translateY(1px); }
+      .cta-chat .material-symbols-rounded { font-size:22px; }
+
+      /* Fullscreen chatbot when triggered */
+      body.chatbot-fullscreen .chatbot-popup {
+        position:fixed; inset:0; width:100vw; height:100vh; max-width:none; max-height:none;
+        border-radius:0; box-shadow:none; opacity:1; visibility:visible; transform:none;
+      }
+      body.chatbot-fullscreen #chatbot-toggler { display:none; }
+    </style>
   <!-- Removed inline showProfileModal script to avoid conflicts. -->
   </head>
   <body>
     <!-- Header -->
     <header class="main-header">
       <div class="logo">
-  <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Interview Prep Pro Logo" />
+        <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Interview Prep Pro Logo" />
         <h1>Interview Prep Pro</h1>
       </div>
       <nav class="main-nav">
@@ -25,24 +45,14 @@
         <a href="#">About</a>
       </nav>
       <div class="user-actions">
-<button id="profile-btn" class="profile-btn" aria-label="Profile">
-  <span class="material-symbols-rounded" aria-hidden="true">account_circle</span>
-  Profile
-</button>
-<script>
-  // Ensure profile button redirects to profile.html
-  document.addEventListener('DOMContentLoaded', function() {
-    var profileBtn = document.getElementById('profile-btn');
-    if (profileBtn) {
-      profileBtn.addEventListener('click', function() {
-        window.location.href = 'profile.html';
-      });
-    }
-  });
-</script>
+        <button id="profile-btn" class="profile-btn" aria-label="Profile">
+          <span class="material-symbols-rounded" aria-hidden="true">account_circle</span>
+          Profile
+        </button>
+        
 
-  <button class="login-btn" aria-label="Login">Login</button>
-  <button class="signup-btn" aria-label="Sign Up">Sign Up</button>
+        <button class="login-btn" aria-label="Login">Login</button>
+        <button class="signup-btn" aria-label="Sign Up">Sign Up</button>
       </div>
     </header>
 
@@ -53,19 +63,19 @@
         <div class="sidebar-section">
           <h3>Quick Links</h3>
           <ul>
-            <li><a href="#"><span class="material-symbols-rounded">description</span>Interview Tips</a></li>
-            <li><a href="#"><span class="material-symbols-rounded">psychology</span>Behavioral Questions</a></li>
-            <li><a href="#"><span class="material-symbols-rounded">work</span>Job Search</a></li>
-            <li><a href="#"><span class="material-symbols-rounded">school</span>Career Development</a></li>
+            <li><a href="https://www.indeed.com/career-advice/interviewing" target="_blank"><span class="material-symbols-rounded">description</span>Interview Tips</a></li>
+            <li><a href="https://www.themuse.com/advice/behavioral-interview-questions-answers-examples" target="_blank"><span class="material-symbols-rounded">psychology</span>Behavioral Questions</a></li>
+            <li><a href="https://www.linkedin.com/jobs/" target="_blank"><span class="material-symbols-rounded">work</span>Job Search</a></li>
+            <li><a href="https://www.coursera.org/career-development" target="_blank"><span class="material-symbols-rounded">school</span>Career Development</a></li>
           </ul>
         </div>
         <div class="sidebar-section">
           <h3>Popular Topics</h3>
           <ul>
-            <li><a href="#"><span class="material-symbols-rounded">trending_up</span>Salary Negotiation</a></li>
-            <li><a href="#"><span class="material-symbols-rounded">groups</span>Team Management</a></li>
-            <li><a href="#"><span class="material-symbols-rounded">rocket_launch</span>Career Growth</a></li>
-            <li><a href="#"><span class="material-symbols-rounded">psychology_alt</span>Soft Skills</a></li>
+            <li><a href="https://www.glassdoor.com/blog/salary-negotiation-tips/" target="_blank"><span class="material-symbols-rounded">trending_up</span>Salary Negotiation</a></li>
+            <li><a href="https://www.mindtools.com/pages/article/newTMM_92.htm" target="_blank"><span class="material-symbols-rounded">groups</span>Team Management</a></li>
+            <li><a href="https://www.forbes.com/sites/forbescoachescouncil/2021/03/09/15-strategies-for-accelerating-your-career-growth/" target="_blank"><span class="material-symbols-rounded">rocket_launch</span>Career Growth</a></li>
+            <li><a href="https://www.skillsyouneed.com/general/soft-skills.html" target="_blank"><span class="material-symbols-rounded">psychology_alt</span>Soft Skills</a></li>
           </ul>
         </div>
       </aside>
@@ -75,6 +85,15 @@
         <section class="hero-section">
           <h2>Master Your Interview Skills</h2>
           <p>Get expert guidance and practice with our AI-powered interview preparation assistant</p>
+
+          <!-- Chatbot CTA Button -->
+          <div style="margin: 24px 0;">
+            <button id="open-chat-full" class="cta-chat">
+              <span class="material-symbols-rounded">smart_toy</span>
+              Try Job Interview Preparation Bot
+            </button>
+          </div>
+
           <div class="feature-cards">
             <div class="feature-card" id="smart-practice-card" style="cursor:pointer;">
               <span class="material-symbols-rounded">psychology</span>
@@ -91,16 +110,41 @@
                 }
               });
             </script>
-            <div class="feature-card">
-              <span class="material-symbols-rounded">school</span>
-              <h3>Expert Tips</h3>
-              <p>Access comprehensive interview preparation resources</p>
+            <div class="feature-card" id="mock-interview-card" style="cursor:pointer;">
+              <span class="material-symbols-rounded">record_voice_over</span>
+              <h3>Mock Interview</h3>
+              <p>Practice with AI-powered mock interviews tailored to your role</p>
             </div>
-            <div class="feature-card">
+            <div class="feature-card" id="track-progress-card" style="cursor:pointer;">
               <span class="material-symbols-rounded">trending_up</span>
               <h3>Track Progress</h3>
               <p>Monitor your improvement with detailed analytics</p>
             </div>
+            <div class="feature-card" id="resume-analyzer-card" style="cursor:pointer;">
+              <span class="material-symbols-rounded">description</span>
+              <h3>Resume Analyzer</h3>
+              <p>Get instant feedback and suggestions to improve your resume</p>
+            </div>
+            <script>
+              document.addEventListener('DOMContentLoaded', function() {
+                var resumeAnalyzer = document.getElementById('resume-analyzer-card');
+                if (resumeAnalyzer) {
+                  resumeAnalyzer.addEventListener('click', function() {
+                    window.location.href = 'http://localhost:9002/';
+                  });
+                }
+              });
+            </script>
+            <script>
+              document.addEventListener('DOMContentLoaded', function() {
+                var mockInterview = document.getElementById('mock-interview-card');
+                if (mockInterview) {
+                  mockInterview.addEventListener('click', function() {
+                    window.location.href = 'http://localhost:5000';
+                  });
+                }
+              });
+            </script>
           </div>
         </section>
 
@@ -129,7 +173,92 @@
             </div>
           </div>
         </section>
+
+        <!-- Added Track Progress card to main content -->
+        <div id="track-progress-card" class="resource-card" style="cursor:pointer;">
+          <h3>Track Progress</h3>
+          <p>View your resume analysis scores and progress over time.</p>
+        </div>
+
+        <!-- Track Progress Modal (hidden by default) -->
+        <div id="progress-modal" class="profile-modal" style="display:none;">
+          <div class="profile-modal-content" style="max-width:720px;">
+            <div class="profile-modal-header">
+              <h2>Resume Progress</h2>
+              <button id="close-progress" class="close-btn" aria-label="Close Progress">
+                <span class="material-symbols-rounded">close</span>
+              </button>
+            </div>
+            <div class="profile-modal-body">
+              <div class="profile-info">
+                <div class="profile-section" style="display:flex; gap:20px; align-items:center; flex-wrap:wrap;">
+                  <div id="donut-wrapper" style="width:200px; height:200px; display:flex; align-items:center; justify-content:center;">
+                    <svg id="donut-svg" viewBox="0 0 120 120" width="200" height="200">
+                      <circle cx="60" cy="60" r="52" stroke="#e5e7eb" stroke-width="12" fill="none" />
+                      <circle id="donut-progress" cx="60" cy="60" r="52" stroke="#16a34a" stroke-width="12" fill="none" stroke-linecap="round" transform="rotate(-90 60 60)" stroke-dasharray="0 327" />
+                      <text id="donut-label" x="60" y="66" text-anchor="middle" font-size="20" font-weight="700" fill="#111827">--/100</text>
+                    </svg>
+                  </div>
+                  <div style="flex:1; min-width:260px;">
+                    <h3 style="margin:0 0 8px 0;">Latest Score</h3>
+                    <div id="latest-meta" style="color:#6b7280;">—</div>
+                  </div>
+                </div>
+                <div class="profile-section" id="latest-details" style="display:none;">
+                  <h3>Latest Analysis</h3>
+                  <div style="margin:6px 0;"><strong>Strengths:</strong> <span id="detail-strengths"></span></div>
+                  <div style="margin:6px 0;"><strong>Weaknesses:</strong> <span id="detail-weaknesses"></span></div>
+                  <div style="margin:6px 0;"><strong>Improvements:</strong> <span id="detail-improvements"></span></div>
+                  <div style="margin:6px 0;"><strong>Overall Feedback:</strong> <span id="detail-overall"></span></div>
+                </div>
+                <div class="profile-section">
+                  <h3>Recent Scores</h3>
+                  <ul id="scores-list" style="list-style:none; padding:0; margin:0;"></ul>
+                </div>
+                <div class="profile-section">
+                  <small style="color:#6b7280;">Scores come from the Resume Analyzer app. Use Analyze + Save Score there, then open Track Progress here.</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </main>
+    </div>
+
+    <!-- Smart Practice Modal -->
+    <div id="sp-modal" class="profile-modal" style="display:none;">
+      <div class="profile-modal-content" style="max-width:720px;">
+        <div class="profile-modal-header">
+          <h2>Smart Practice</h2>
+          <button id="sp-close" class="close-btn" aria-label="Close"> <span class="material-symbols-rounded">close</span> </button>
+        </div>
+        <div class="profile-modal-body">
+          <div id="sp-setup">
+            <p style="margin-bottom:8px; color:#374151;">We’ll generate questions based on your Career Goal and Preferred Technologies from your profile.</p>
+            <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+              <label>Career Goal:</label>
+              <input id="sp-career" type="text" style="flex:1; padding:8px; border:1px solid #e5e7eb; border-radius:8px;" placeholder="e.g., Frontend Developer" />
+            </div>
+            <div style="height:8px;"></div>
+            <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+              <label>Technology:</label>
+              <input id="sp-tech" type="text" style="flex:1; padding:8px; border:1px solid #e5e7eb; border-radius:8px;" placeholder="e.g., React" />
+            </div>
+            <div style="height:12px;"></div>
+            <button id="sp-start" class="cta-chat" style="border-radius:10px;">Start Practice</button>
+          </div>
+          <div id="sp-quiz" style="display:none;">
+            <div id="sp-qwrap"></div>
+            <div style="height:12px;"></div>
+            <button id="sp-next" class="cta-chat" style="border-radius:10px;">Next</button>
+          </div>
+          <div id="sp-result" style="display:none;">
+            <h3 style="margin:0 0 8px 0;">Result</h3>
+            <p id="sp-score" style="font-weight:700;"></p>
+            <ul id="sp-review" style="margin-top:8px; padding-left:16px;"></ul>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Chatbot Section (Existing Code) -->
@@ -149,20 +278,33 @@
           <h2 class="logo-text">Chatbot</h2>
         </div>
         <div class="header-controls">
-          <button id="advanced-mode" class="material-symbols-rounded">smart_toy</button>
-          <button id="close-chatbot" class="material-symbols-rounded">keyboard_arrow_down</button>
+          <button id="chat-back-home" class="material-symbols-rounded" aria-label="Back">arrow_back</button>
+          <button id="advanced-mode" class="material-symbols-rounded" aria-label="Advanced Mode">smart_toy</button>
+          <button id="close-chatbot" class="material-symbols-rounded" aria-label="Close Chatbot">keyboard_arrow_down</button>
         </div>
       </div>
       <!-- Chatbot Body -->
       <div class="chat-body">
-        <div class="message bot-message">
-          <svg class="bot-avatar" xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 1024 1024">
-            <path
-              d="M738.3 287.6H285.7c-59 0-106.8 47.8-106.8 106.8v303.1c0 59 47.8 106.8 106.8 106.8h81.5v111.1c0 .7.8 1.1 1.4.7l166.9-110.6 41.8-.8h117.4l43.6-.4c59 0 106.8-47.8 106.8-106.8V394.5c0-59-47.8-106.9-106.8-106.9zM351.7 448.2c0-29.5 23.9-53.5 53.5-53.5s53.5 23.9 53.5 53.5-23.9 53.5-53.5 53.5-53.5-23.9-53.5-53.5zm157.9 267.1c-67.8 0-123.8-47.5-132.3-109h264.6c-8.6 61.5-64.5 109-132.3 109zm110-213.7c-29.5 0-53.5-23.9-53.5-53.5s23.9-53.5 53.5-53.5 53.5 23.9 53.5 53.5-23.9 53.5-53.5 53.5zM867.2 644.5V453.1h26.5c19.4 0 35.1 15.7 35.1 35.1v121.1c0 19.4-15.7 35.1-35.1 35.1h-26.5zM95.2 609.4V488.2c0-19.4 15.7-35.1 35.1-35.1h26.5v191.3h-26.5c-19.4 0-35.1-15.7-35.1-35.1zM561.5 149.6c0 23.4-15.6 43.3-36.9 49.7v44.9h-30v-44.9c-21.4-6.5-36.9-26.3-36.9-49.7 0-28.6 23.3-51.9 51.9-51.9s51.9 23.3 51.9 51.9z"
-            />
-          </svg>
-          <!-- prettier-ignore -->
-          <div class="message-text"> Hey there  <br /> How can I help you today? </div>
+        <div style="display:flex; gap:16px; width:100%; height:100%;">
+          <div style="flex:1 1 auto; min-width:0;">
+            <div class="message bot-message">
+              <svg class="bot-avatar" xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 1024 1024">
+                <path
+                  d="M738.3 287.6H285.7c-59 0-106.8 47.8-106.8 106.8v303.1c0 59 47.8 106.8 106.8 106.8h81.5v111.1c0 .7.8 1.1 1.4.7l166.9-110.6 41.8-.8h117.4l43.6-.4c59 0 106.8-47.8 106.8-106.8V394.5c0-59-47.8-106.9-106.8-106.9zM351.7 448.2c0-29.5 23.9-53.5 53.5-53.5s53.5 23.9 53.5 53.5-23.9 53.5-53.5 53.5-53.5-23.9-53.5-53.5zm157.9 267.1c-67.8 0-123.8-47.5-132.3-109h264.6c-8.6 61.5-64.5 109-132.3 109zm110-213.7c-29.5 0-53.5-23.9-53.5-53.5s23.9-53.5 53.5-53.5 53.5 23.9 53.5 53.5-23.9 53.5-53.5 53.5zM867.2 644.5V453.1h26.5c19.4 0 35.1 15.7 35.1 35.1v121.1c0 19.4-15.7 35.1-35.1 35.1h-26.5zM95.2 609.4V488.2c0-19.4 15.7-35.1 35.1-35.1h26.5v191.3h-26.5c-19.4 0-35.1-15.7-35.1-35.1zM561.5 149.6c0 23.4-15.6 43.3-36.9 49.7v44.9h-30v-44.9c-21.4-6.5-36.9-26.3-36.9-49.7 0-28.6 23.3-51.9 51.9-51.9s51.9 23.3 51.9 51.9z"
+                />
+              </svg>
+              <div class="message-text"> Hey there  <br /> How can I help you today? </div>
+            </div>
+            <div id="chat-stream-anchor"></div>
+          </div>
+          <aside id="chat-history" style="width:320px; flex:0 0 320px; border-left:1px solid #dcfce7; background:#fff; border-radius:12px; padding:12px; overflow:auto;">
+            <h4 style="margin:6px 0 12px 4px; color:#1e293b;">Chats</h4>
+            <button id="new-chat" class="cta-chat" style="width:100%; border-radius:10px; margin-bottom:8px; padding:10px 12px; font-size:.95rem;">New Chat</button>
+            <ul id="chat-sessions" style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:6px;"></ul>
+            <hr style="margin:12px 0; border:none; border-top:1px solid #dcfce7;"/>
+            <h4 style="margin:6px 0 8px 4px; color:#1e293b;">Messages</h4>
+            <ul id="chat-history-list" style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:8px;"></ul>
+          </aside>
         </div>
       </div>-
       <!-- Chatbot Footer -->
@@ -170,26 +312,28 @@
         <form action="#" class="chat-form">
           <textarea placeholder="Message..." class="message-input" required></textarea>
           <div class="chat-controls">
-            <button type="button" id="emoji-picker" class="material-symbols-outlined">sentiment_satisfied</button>
+            <button type="button" id="emoji-picker" class="material-symbols-outlined" aria-label="Emoji Picker">sentiment_satisfied</button>
             <div class="file-upload-wrapper">
-              <input type="file" accept="image/*" id="file-input" hidden />
-              <img src="#" />
-              <button type="button" id="file-upload" class="material-symbols-rounded">attach_file</button>
-              <button type="button" id="file-cancel" class="material-symbols-rounded">close</button>
+              <input type="file" accept="image/*" id="file-input" hidden title="Upload an image" />
+              <img src="#" alt="Uploaded preview" />
+              <button type="button" id="file-upload" class="material-symbols-rounded" aria-label="Attach File">attach_file</button>
+              <button type="button" id="file-cancel" class="material-symbols-rounded" aria-label="Cancel File Upload">close</button>
             </div>
-            <button type="submit" id="send-message" class="material-symbols-rounded">arrow_upward</button>
+            <button type="submit" id="send-message" class="material-symbols-rounded" aria-label="Send Message">arrow_upward</button>
           </div>
         </form>
       </div>
     </div>
     <!-- Linking Emoji Mart script for emoji picker -->
     <script src="https://cdn.jsdelivr.net/npm/emoji-mart@latest/dist/browser.js"></script>
+    <!-- Fuse.js for fuzzy matching -->
+    <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2/dist/fuse.min.js"></script>
     <!-- Profile Modal -->
     <div id="profile-modal" class="profile-modal">
       <div class="profile-modal-content">
         <div class="profile-modal-header">
           <h2>User Profile</h2>
-          <button id="close-profile" class="close-btn">
+          <button id="close-profile" class="close-btn" aria-label="Close Profile Modal">
             <span class="material-symbols-rounded">close</span>
           </button>
         </div>
@@ -198,15 +342,15 @@
             <div class="profile-section">
               <h3>Personal Information</h3>
               <div class="profile-field">
-                <label>Username:</label>
+                <span class="field-label">Username:</span>
                 <span id="profile-username"></span>
               </div>
               <div class="profile-field">
-                <label>Full Name:</label>
+                <span class="field-label">Full Name:</span>
                 <span id="profile-fullname"></span>
               </div>
               <div class="profile-field">
-                <label>Email:</label>
+                <span class="field-label">Email:</span>
                 <span id="profile-email"></span>
               </div>
             </div>
@@ -214,25 +358,25 @@
             <div class="profile-section">
               <h3>Job Preparation Details</h3>
               <div class="profile-field">
-                <label>User Type:</label>
+                <span class="field-label">User Type:</span>
                 <span id="profile-usertype"></span>
               </div>
               <div class="profile-field">
-                <label>Location:</label>
+                <span class="field-label">Location:</span>
                 <span id="profile-location"></span>
               </div>
               <div class="profile-field">
-                <label>Career Goal:</label>
+                <span class="field-label">Career Goal:</span>
                 <span id="profile-careergoal"></span>
               </div>
               <div class="profile-field">
-                <label>Preferred Technologies:</label>
+                <span class="field-label">Preferred Technologies:</span>
                 <span id="profile-technologies"></span>
               </div>
             </div>
             
             <div class="profile-actions">
-              <button id="logout-btn" class="logout-btn">
+              <button id="logout-btn" class="logout-btn" aria-label="Logout">
                 <span class="material-symbols-rounded">logout</span>
                 Logout
               </button>
@@ -244,5 +388,131 @@
 
     <!-- Linking custom script -->
     <script src="script.js"></script>
+
+    <script>
+      // Donut utilities
+      function setDonut(score) {
+        var clamped = Math.max(0, Math.min(100, Number(score) || 0));
+        var circumference = 2 * Math.PI * 52; // r=52
+        var dash = (clamped / 100) * circumference;
+        var rest = Math.max(0, circumference - dash);
+        var progress = document.getElementById('donut-progress');
+        var label = document.getElementById('donut-label');
+        if (progress) progress.setAttribute('stroke-dasharray', dash + ' ' + rest);
+        if (label) label.textContent = clamped + '/100';
+      }
+
+      async function openProgressModal() {
+        var modal = document.getElementById('progress-modal');
+        var list = document.getElementById('scores-list');
+        var latestMeta = document.getElementById('latest-meta');
+        if (!modal || !list || !latestMeta) return;
+        list.innerHTML = '<li style="color:#6b7280;">Loading...</li>';
+        latestMeta.textContent = 'Loading...';
+        modal.style.display = 'block';
+
+        try {
+          var res = await fetch('http://localhost:3000/api/resume-score', { credentials: 'include' });
+          if (!res.ok) throw new Error('Failed to fetch');
+          var data = await res.json();
+          var scores = Array.isArray(data && data.scores) ? data.scores : [];
+
+          list.innerHTML = '';
+          if (scores.length === 0) {
+            setDonut(0);
+            latestMeta.textContent = 'No scores saved yet.';
+            list.innerHTML = '<li style="color:#6b7280;">Save a score in the Resume Analyzer to see it here.</li>';
+            return;
+          }
+
+          scores.sort(function(a, b) { return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(); });
+          var latest = scores[0];
+          setDonut(latest && typeof latest.score === 'number' ? latest.score : 0);
+          var meta = [];
+          if (latest && latest.timestamp) meta.push(new Date(latest.timestamp).toLocaleString());
+          if (latest && latest.fileName) meta.push(latest.fileName);
+          latestMeta.textContent = meta.join(' • ') || 'Latest';
+          // Latest details
+          var details = latest && latest.details ? latest.details : null;
+          var detailsSection = document.getElementById('latest-details');
+          if (detailsSection) {
+            if (details) {
+              detailsSection.style.display = 'block';
+              var s1 = document.getElementById('detail-strengths'); if (s1) s1.textContent = details.strengths || '—';
+              var s2 = document.getElementById('detail-weaknesses'); if (s2) s2.textContent = details.weaknesses || '—';
+              var s3 = document.getElementById('detail-improvements'); if (s3) s3.textContent = details.improvements || '—';
+              var s4 = document.getElementById('detail-overall'); if (s4) s4.textContent = details.overallFeedback || '—';
+            } else {
+              detailsSection.style.display = 'none';
+            }
+          }
+
+          scores.slice(0, 10).forEach(function(s){
+            var li = document.createElement('li');
+            var ts = s.timestamp ? new Date(s.timestamp).toLocaleString() : '';
+            var name = s.fileName ? ' • ' + s.fileName : '';
+            li.textContent = ts + name + ' — ' + s.score + '/100';
+            li.style.padding = '6px 0';
+            list.appendChild(li);
+          });
+        } catch (e) {
+          setDonut(0);
+          latestMeta.textContent = 'Unable to load scores. Please log in.';
+          list.innerHTML = '<li style="color:#b91c1c;">Login required or server unavailable (http://localhost:3000)</li>';
+        }
+      }
+
+      window.openProgressModal = openProgressModal;
+
+      document.addEventListener('DOMContentLoaded', function() {
+        // Open chatbot in fullscreen from CTA
+        var openChatBtn = document.getElementById('open-chat-full');
+        if (openChatBtn) {
+          openChatBtn.addEventListener('click', function(){
+            document.body.classList.add('show-chatbot','chatbot-fullscreen');
+            if (typeof loadChatSessions === 'function') { loadChatSessions(); }
+          });
+        }
+        var openers = document.querySelectorAll('#track-progress-card');
+        openers.forEach(function(el){ el.addEventListener('click', openProgressModal); });
+        var closeBtn = document.getElementById('close-progress');
+        if (closeBtn) closeBtn.addEventListener('click', function(){
+          var modal = document.getElementById('progress-modal');
+          if (modal) modal.style.display = 'none';
+        });
+        // Close when clicking outside content
+        var modal = document.getElementById('progress-modal');
+        if (modal) modal.addEventListener('click', function(e){
+          if (e.target === modal) modal.style.display = 'none';
+        });
+
+        // Auto-open modal when redirected with ?showProgress=1
+        try {
+          var params = new URLSearchParams(window.location.search);
+          if (params.get('showProgress') === '1') {
+            openProgressModal();
+          }
+        } catch (e) {}
+      });
+    </script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        function cleanAria() {
+          try {
+            var bad = document.querySelectorAll('[aria-posinset],[aria-setsize],[aria-selected]');
+            bad.forEach(function(el){
+              el.removeAttribute('aria-posinset');
+              el.removeAttribute('aria-setsize');
+              var role = (el.getAttribute('role')||'').toLowerCase();
+              if (!/^(option|tab|listitem|treeitem)$/.test(role)) el.removeAttribute('aria-selected');
+            });
+          } catch (_) {}
+        }
+        cleanAria();
+        setTimeout(cleanAria, 200);
+        setTimeout(cleanAria, 800);
+        try { new MutationObserver(cleanAria).observe(document.body, { childList: true, subtree: true }); } catch (_) {}
+      });
+    </script>
   </body>
 </html>
