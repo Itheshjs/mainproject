@@ -84,9 +84,14 @@ export default function ResumeAnalysisPage() {
       const resumeDataUri = await readFileAsDataURL(selectedFile);
       const result = await analyzeResume({ resumeDataUri });
       setAnalysisResult(result);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error analyzing resume:", err);
-      setError("Failed to analyze resume. Please try again.");
+      // Display the error message directly to the user
+      if (err.message) {
+        setError(err.message);
+      } else {
+        setError("Failed to analyze resume. Please try again.");
+      }
       setAnalysisResult(null);
     } finally {
       setIsLoading(false);

@@ -9,7 +9,8 @@ const closeChatbot = document.querySelector("#close-chatbot");
 const advancedModeButton = document.querySelector("#advanced-mode");
 // API setup
 const API_KEY = "AIzaSyC3IkDvwqAtlLO5cdrRx9ZEr0z0X_gWH3k";
-const API_URL = `http://localhost:3000/api/gemini-generate`;
+// API_URL will be set from config.js (loaded in index.html)
+const API_URL = window.API_CONFIG ? window.API_CONFIG.GEMINI_GENERATE : `http://localhost:3000/api/gemini-generate`;
 // Initialize user message and file data
 const userData = {
   message: null,
@@ -213,7 +214,8 @@ async function persistChat(role, text) {
       localPersistChat(role, text);
       return;
     }
-    const resp = await fetch('http://localhost:3000/api/chat-history', {
+    const apiUrl = window.API_CONFIG ? window.API_CONFIG.CHAT_HISTORY : 'http://localhost:3000/api/chat-history';
+    const resp = await fetch(apiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
@@ -230,22 +232,109 @@ async function loadChatSessions() {
   list.innerHTML = '<li style="color:#6b7280; padding:6px;">Loading…</li>';
   try {
     if (CHAT_LOCAL) { loadChatSessionsLocal(); return; }
-    const res = await fetch('http://localhost:3000/api/chat-sessions', { credentials: 'include' });
+    const apiUrl = window.API_CONFIG ? window.API_CONFIG.CHAT_SESSIONS : 'http://localhost:3000/api/chat-sessions';
+    const res = await fetch(apiUrl, { credentials: 'include' });
     const data = await res.json();
     if (res.status === 401) { switchToLocalChat(); loadChatSessionsLocal(); return; }
     if (!data.success || !Array.isArray(data.sessions)) throw new Error();
+    
+    // Filter out empty "New chat" sessions (sessions with no messages)
+    // Only show sessions that have actual conversation content
+    const sessionsWithMessages = [];
+    for (const s of data.sessions) {
+      // Check if session has messages
+      try {
+        const historyUrl = window.API_CONFIG ? window.API_CONFIG.CHAT_HISTORY : 'http://localhost:3000/api/chat-history';
+        const historyRes = await fetch(historyUrl + '?sessionId=' + encodeURIComponent(s._id), { credentials: 'include' });
+        const historyData = await historyRes.json();
+        if (historyData.success && Array.isArray(historyData.messages) && historyData.messages.length > 0) {
+          sessionsWithMessages.push(s);
+        }
+      } catch (e) {
+        // If error checking messages, keep the session to be safe
+        sessionsWithMessages.push(s);
+      }
+    }
+    
     list.innerHTML = '';
-    data.sessions.forEach(s => {
+    // Only show sessions that have messages, not empty "New chat" entries
+    sessionsWithMessages.forEach(s => {
       const li = document.createElement('li');
       li.style.padding = '8px';
       li.style.border = '1px solid #e5e7eb';
       li.style.borderRadius = '8px';
       li.style.cursor = 'pointer';
-      li.textContent = s.title || new Date(s.createdAt).toLocaleString();
-      li.addEventListener('click', () => {
+      li.style.display = 'flex';
+      li.style.justifyContent = 'space-between';
+      li.style.alignItems = 'center';
+      li.style.gap = '8px';
+      
+      // Session title (clickable to load chat)
+      const titleSpan = document.createElement('span');
+      titleSpan.textContent = s.title || new Date(s.createdAt).toLocaleString();
+      titleSpan.style.flex = '1';
+      titleSpan.style.overflow = 'hidden';
+      titleSpan.style.textOverflow = 'ellipsis';
+      titleSpan.style.whiteSpace = 'nowrap';
+      titleSpan.addEventListener('click', () => {
         currentChatSessionId = s._id;
         loadChatHistory();
       });
+      
+      // Delete button
+      const deleteBtn = document.createElement('button');
+      deleteBtn.innerHTML = '🗑️';
+      deleteBtn.style.background = 'transparent';
+      deleteBtn.style.border = 'none';
+      deleteBtn.style.cursor = 'pointer';
+      deleteBtn.style.fontSize = '16px';
+      deleteBtn.style.padding = '4px';
+      deleteBtn.style.borderRadius = '4px';
+      deleteBtn.style.transition = 'all 0.2s';
+      deleteBtn.title = 'Delete this chat session';
+      deleteBtn.addEventListener('mouseenter', () => {
+        deleteBtn.style.background = '#fee2e2';
+      });
+      deleteBtn.addEventListener('mouseleave', () => {
+        deleteBtn.style.background = 'transparent';
+      });
+      deleteBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        if (confirm('Are you sure you want to delete this chat session?')) {
+          try {
+            const deleteUrl = window.API_CONFIG ? `${window.API_CONFIG.BASE_URL}/api/chat-sessions/${s._id}` : `http://localhost:3000/api/chat-sessions/${s._id}`;
+            console.log('Deleting session:', s._id, 'URL:', deleteUrl);
+            const res = await fetch(deleteUrl, {
+              method: 'DELETE',
+              credentials: 'include'
+            });
+            console.log('Delete response status:', res.status);
+            const data = await res.json();
+            console.log('Delete response data:', data);
+            
+            if (res.ok) {
+              // If deleted session was active, clear it
+              if (currentChatSessionId === s._id) {
+                currentChatSessionId = null;
+                const chatHistoryList = document.getElementById('chat-history-list');
+                if (chatHistoryList) chatHistoryList.innerHTML = '';
+              }
+              // Reload sessions list
+              loadChatSessions();
+            } else {
+              const errorMsg = data.message || 'Failed to delete session';
+              console.error('Delete failed:', errorMsg);
+              alert('Failed to delete session: ' + errorMsg);
+            }
+          } catch (err) {
+            console.error('Error deleting session:', err);
+            alert('Error deleting session: ' + err.message);
+          }
+        }
+      });
+      
+      li.appendChild(titleSpan);
+      li.appendChild(deleteBtn);
       list.appendChild(li);
       if (!currentChatSessionId) currentChatSessionId = s._id;
     });
@@ -260,7 +349,8 @@ async function ensureSession(titleHint) {
   if (currentChatSessionId) return currentChatSessionId;
   try {
     if (CHAT_LOCAL) { currentChatSessionId = localEnsureSession(titleHint); return currentChatSessionId; }
-    const res = await fetch('http://localhost:3000/api/chat-sessions', {
+    const apiUrl = window.API_CONFIG ? window.API_CONFIG.CHAT_SESSIONS : 'http://localhost:3000/api/chat-sessions';
+    const res = await fetch(apiUrl, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
       body: JSON.stringify({ title: titleHint || 'New chat' })
     });
@@ -281,7 +371,8 @@ async function loadChatHistory() {
   try {
     if (!currentChatSessionId) { list.innerHTML=''; return; }
     if (CHAT_LOCAL) { loadChatHistoryLocal(); return; }
-    const res = await fetch('http://localhost:3000/api/chat-history?sessionId=' + encodeURIComponent(currentChatSessionId), { credentials: 'include' });
+    const apiUrl = window.API_CONFIG ? window.API_CONFIG.CHAT_HISTORY : 'http://localhost:3000/api/chat-history';
+    const res = await fetch(apiUrl + '?sessionId=' + encodeURIComponent(currentChatSessionId), { credentials: 'include' });
     const data = await res.json();
     if (res.status === 401) { switchToLocalChat(); return; }
     if (!data.success || !Array.isArray(data.messages)) throw new Error();
@@ -292,35 +383,123 @@ async function loadChatHistory() {
       if (msgs[i].role !== 'user') continue;
       const q = msgs[i];
       const a = (i + 1 < msgs.length && msgs[i + 1].role === 'bot') ? msgs[i + 1] : null;
+      
+      // Main list item container
       const li = document.createElement('li');
-      li.style.padding = '10px';
-      li.style.border = '1px solid #e5e7eb';
-      li.style.borderRadius = '8px';
-      li.style.background = '#f8fafc';
+      li.style.padding = '0';
+      li.style.border = '2px solid #e5e7eb';
+      li.style.borderRadius = '10px';
+      li.style.background = '#ffffff';
       li.style.cursor = 'pointer';
+      li.style.marginBottom = '12px';
+      li.style.overflow = 'hidden';
+      li.style.transition = 'all 0.2s ease';
+      
+      // Question header (always visible)
+      const questionHeader = document.createElement('div');
+      questionHeader.style.padding = '12px';
+      questionHeader.style.background = 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)';
+      questionHeader.style.borderBottom = '1px solid #bbf7d0';
+      
       const ts = q.timestamp ? new Date(q.timestamp).toLocaleString() : '';
       const title = document.createElement('div');
-      title.style.fontWeight = '600';
-      title.style.color = '#111827';
+      title.style.fontWeight = '700';
+      title.style.color = '#15803d';
+      title.style.fontSize = '14px';
+      title.style.marginBottom = '4px';
+      title.style.display = 'flex';
+      title.style.alignItems = 'center';
+      title.style.gap = '6px';
       title.textContent = q.text.length > 80 ? q.text.slice(0, 80) + '…' : q.text;
+      
       const meta = document.createElement('div');
       meta.style.color = '#6b7280';
-      meta.style.fontSize = '12px';
-      meta.textContent = ts;
-      const detail = document.createElement('div');
-      detail.style.display = 'none';
-      detail.style.marginTop = '8px';
-      detail.style.padding = '8px';
-      detail.style.background = '#ffffff';
-      detail.style.border = '1px solid #dcfce7';
-      detail.style.borderRadius = '6px';
-      detail.textContent = a ? a.text : 'No answer yet.';
-      li.appendChild(title);
-      li.appendChild(meta);
-      li.appendChild(detail);
+      meta.style.fontSize = '11px';
+      meta.style.display = 'flex';
+      meta.style.alignItems = 'center';
+      meta.style.gap = '4px';
+      meta.innerHTML = `<span style="font-size:12px;">🕒</span> ${ts}`;
+      
+      questionHeader.appendChild(title);
+      questionHeader.appendChild(meta);
+      
+      // Answer section (expandable)
+      const answerSection = document.createElement('div');
+      answerSection.style.display = 'none';
+      answerSection.style.padding = '16px';
+      answerSection.style.background = '#fafafa';
+      answerSection.style.borderTop = '2px solid #16a34a';
+      answerSection.style.animation = 'slideDown 0.3s ease';
+      
+      const answerLabel = document.createElement('div');
+      answerLabel.style.fontWeight = '700';
+      answerLabel.style.color = '#16a34a';
+      answerLabel.style.fontSize = '13px';
+      answerLabel.style.marginBottom = '8px';
+      answerLabel.style.display = 'flex';
+      answerLabel.style.alignItems = 'center';
+      answerLabel.style.gap = '6px';
+      answerLabel.innerHTML = '<span style="font-size:16px;">✅</span> Answer:';
+      
+      const answerText = document.createElement('div');
+      answerText.style.color = '#1f2937';
+      answerText.style.fontSize = '13px';
+      answerText.style.lineHeight = '1.6';
+      answerText.style.whiteSpace = 'pre-wrap';
+      answerText.style.wordWrap = 'break-word';
+      answerText.style.background = '#ffffff';
+      answerText.style.padding = '12px';
+      answerText.style.borderRadius = '6px';
+      answerText.style.border = '1px solid #e5e7eb';
+      answerText.textContent = a ? a.text : 'No answer yet.';
+      
+      answerSection.appendChild(answerLabel);
+      answerSection.appendChild(answerText);
+      
+      // Expand/collapse indicator
+      const expandIndicator = document.createElement('div');
+      expandIndicator.style.textAlign = 'center';
+      expandIndicator.style.padding = '8px';
+      expandIndicator.style.background = '#f9fafb';
+      expandIndicator.style.fontSize = '11px';
+      expandIndicator.style.color = '#6b7280';
+      expandIndicator.style.fontWeight = '600';
+      expandIndicator.textContent = 'Click to view answer ▼';
+      
+      li.appendChild(questionHeader);
+      li.appendChild(expandIndicator);
+      li.appendChild(answerSection);
+      
+      // Toggle answer visibility
       li.addEventListener('click', () => {
-        detail.style.display = (detail.style.display === 'none') ? 'block' : 'none';
+        const isVisible = answerSection.style.display !== 'none';
+        if (isVisible) {
+          answerSection.style.display = 'none';
+          expandIndicator.textContent = 'Click to view answer ▼';
+          expandIndicator.style.background = '#f9fafb';
+          li.style.borderColor = '#e5e7eb';
+        } else {
+          answerSection.style.display = 'block';
+          expandIndicator.textContent = 'Click to hide answer ▲';
+          expandIndicator.style.background = '#dcfce7';
+          li.style.borderColor = '#16a34a';
+        }
       });
+      
+      // Hover effect
+      li.addEventListener('mouseenter', () => {
+        if (answerSection.style.display === 'none') {
+          li.style.borderColor = '#bbf7d0';
+          li.style.transform = 'translateX(2px)';
+        }
+      });
+      li.addEventListener('mouseleave', () => {
+        if (answerSection.style.display === 'none') {
+          li.style.borderColor = '#e5e7eb';
+          li.style.transform = 'translateX(0)';
+        }
+      });
+      
       list.appendChild(li);
     }
   } catch (_) {
@@ -664,7 +843,8 @@ const profileBtn = document.getElementById('profile-btn');
 // Check if user is logged in and show profile button
 async function checkUserLogin() {
   try {
-    const response = await fetch('http://localhost:3000/api/profile', {
+    const apiUrl = window.API_CONFIG ? window.API_CONFIG.PROFILE : 'http://localhost:3000/api/profile';
+    const response = await fetch(apiUrl, {
       credentials: 'include'
     });
     const result = await response.json();
@@ -700,7 +880,8 @@ if (profileBtn) {
   profileBtn.addEventListener('click', async function(e) {
     e.preventDefault();
     try {
-      const res = await fetch('http://localhost:3000/api/profile', { credentials: 'include' });
+      const apiUrl = window.API_CONFIG ? window.API_CONFIG.PROFILE : 'http://localhost:3000/api/profile';
+      const res = await fetch(apiUrl, { credentials: 'include' });
       const result = await res.json();
       if (result && result.success && result.user) {
         try { localStorage.setItem('profileUser', JSON.stringify(result.user)); } catch (_) {}
@@ -778,7 +959,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const tech = spTech.value.trim();
     if (!career || !tech) { alert('Please provide Career Goal and Technology.'); return; }
     try {
-      const res = await fetch('http://localhost:3000/api/generate-questions', {
+      const apiUrl = window.API_CONFIG ? window.API_CONFIG.GENERATE_QUESTIONS : 'http://localhost:3000/api/generate-questions';
+      const res = await fetch(apiUrl, {
         method: 'POST', headers: { 'Content-Type':'application/json' }, credentials: 'include',
         body: JSON.stringify({ type:'technical', careerGoal: career, technology: tech, questionCount:5 })
       });
@@ -826,6 +1008,52 @@ document.addEventListener('DOMContentLoaded', () => {
   if (spClose) spClose.addEventListener('click', closeSP);
   if (spStart) spStart.addEventListener('click', startPractice);
   if (spNext) spNext.addEventListener('click', nextQuestion);
+  
+  // Sidebar resize functionality
+  const resizeHandle = document.getElementById('sidebar-resize-handle');
+  const sidebar = document.getElementById('chat-history');
+  if (resizeHandle && sidebar) {
+    let isResizing = false;
+    let startX = 0;
+    let startWidth = 0;
+    
+    resizeHandle.addEventListener('mousedown', (e) => {
+      isResizing = true;
+      startX = e.clientX;
+      startWidth = sidebar.offsetWidth;
+      document.body.style.cursor = 'ew-resize';
+      document.body.style.userSelect = 'none';
+      resizeHandle.style.background = '#16a34a';
+    });
+    
+    document.addEventListener('mousemove', (e) => {
+      if (!isResizing) return;
+      
+      // Calculate new width (drag left = bigger, drag right = smaller)
+      const deltaX = startX - e.clientX; // Reversed for left drag
+      const newWidth = Math.max(250, Math.min(600, startWidth + deltaX));
+      
+      sidebar.style.width = newWidth + 'px';
+      sidebar.style.flex = '0 0 ' + newWidth + 'px';
+    });
+    
+    document.addEventListener('mouseup', () => {
+      if (isResizing) {
+        isResizing = false;
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        resizeHandle.style.background = '#dcfce7';
+      }
+    });
+    
+    // Hover effect
+    resizeHandle.addEventListener('mouseenter', () => {
+      if (!isResizing) resizeHandle.style.background = '#bbf7d0';
+    });
+    resizeHandle.addEventListener('mouseleave', () => {
+      if (!isResizing) resizeHandle.style.background = '#dcfce7';
+    });
+  }
 });
 
 // Local fallback storage for unauthenticated users
@@ -911,7 +1139,8 @@ function loadChatHistoryLocal() {
 const logoutBtn = document.getElementById('logout-btn');
 logoutBtn.addEventListener('click', async () => {
   try {
-    const response = await fetch('http://localhost:3000/api/logout', {
+    const apiUrl = window.API_CONFIG ? window.API_CONFIG.LOGOUT : 'http://localhost:3000/api/logout';
+    const response = await fetch(apiUrl, {
       method: 'POST',
       credentials: 'include'
     });

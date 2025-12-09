@@ -50,3 +50,39 @@ body {
     padding: 18px 20px;
     margin-top: 24px;
 }
+
+.stage-breakdown {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.stage-row {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 12px 14px;
+    box-shadow: 0 3px 12px rgba(15, 23, 42, 0.08);
+}
+
+.stage-row__header {
+    display: flex;
+    justify-content: space-between;
+    font-weight: 600;
+    color: #0f172a;
+    margin-bottom: 8px;
+}
+
+.stage-row__bar {
+    height: 8px;
+    border-radius: 999px;
+    background: #e2e8f0;
+    overflow: hidden;
+}
+
+.stage-row__bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #4c6ef5, #9775fa);
+    transition: width 0.4s ease;
+}

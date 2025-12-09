@@ -25,12 +25,12 @@
       margin: 0;
       font-size: 1.8rem;
     }
-
     .auth-buttons {
       display: flex;
       gap: 0.75rem;
       align-items: center;
     }
+
 
     .try-btn {
       background: white;
@@ -42,27 +42,10 @@
       font-size: 1rem;
       cursor: pointer;
       transition: background 0.3s;
-      text-decoration: none;
-      display: inline-block;
     }
 
     .try-btn:hover {
       background: #e0f2f1;
-    }
-
-    .auth-link {
-      color: white;
-      text-decoration: none;
-      padding: 0.6rem 1.2rem;
-      border-radius: 8px;
-      font-weight: bold;
-      font-size: 1rem;
-      transition: background 0.3s;
-      border: 2px solid white;
-    }
-
-    .auth-link:hover {
-      background: rgba(255, 255, 255, 0.2);
     }
 
     .hero {
@@ -122,16 +105,13 @@
 
   <header>
     <h1>Interview Prep Boot</h1>
-    <div class="auth-buttons">
-      <a href="auth.html" class="auth-link">Sign In</a>
-      <a href="auth.html" class="auth-link">Login</a>
-    </div>
+    <button class="try-btn" onclick="window.location.href='login.html'">Try the Boot</button>
   </header>
 
   <section class="hero">
     <h2>Get Interview-Ready with Confidence</h2>
     <p>Master coding, behavioral, and system design interviews with personalized practice and expert guidance.</p>
-    <button class="try-btn" onclick="window.location.href='auth.html'">Start Now</button>
+    <button class="try-btn" onclick="window.location.href='login.html'">Start Now</button>
   </section>
 
   <section class="info-section">

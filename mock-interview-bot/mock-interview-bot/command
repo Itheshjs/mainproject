@@ -2,3 +2,6 @@ cd C:\xampp-new\htdocs\mock-interview-bot
 >> .\.venv\Scripts\Activate.ps1
 
 python .\mock-interview-bot\app.py 
+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
+
+in smart practice (http://localhost/geminitest/practice.html)only give multiple choice in stage 3 ,4 in this stages asking question and answer in typing remove that only MCQ

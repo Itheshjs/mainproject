@@ -35,11 +35,15 @@ app.use((req, res, next) => {
 });
 
 // Allow multiple origins for CORS
+// IMPORTANT: Add your GitHub Pages URL here when deploying
+// Example: 'https://yourusername.github.io' or 'https://yourusername.github.io/geminitest'
 const allowedOrigins = [
   'http://localhost',
   'http://localhost:5500',
   'http://127.0.0.1:5500',
   'http://localhost:9002',
+  'https://itheshjs.github.io',
+  'https://itheshjs.github.io/mainproject',
 ];
 
 // Allow all localhost ports for development
@@ -72,8 +76,9 @@ app.use(session({
   saveUninitialized: false
 }));
 
-// Connect to MongoDB (Compass/local)
-mongoose.connect('mongodb://localhost:27017/interviewprep')
+// Connect to MongoDB (Compass/local or Atlas)
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/interviewprep';
+mongoose.connect(MONGODB_URI)
   .then(() => console.log('MongoDB connected'))
   .catch(err => console.log('MongoDB connection error:', err));
 
@@ -100,6 +105,37 @@ const ResumeScoreSchema = new mongoose.Schema({
   timestamp: { type: Date, default: Date.now }
 });
 const ResumeScore = mongoose.model('ResumeScore', ResumeScoreSchema);
+
+const StageBreakdownSchema = new mongoose.Schema({
+  title: String,
+  kind: String,
+  correct: Number,
+  total: Number,
+  percentage: Number
+}, { _id: false });
+// Smart Practice Score schema
+const SmartPracticeScoreSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  score: Number,
+  percentage: Number,
+  totalQuestions: Number,
+  correctAnswers: Number,
+  stage: String,
+  stageBreakdown: [StageBreakdownSchema],
+  timestamp: { type: Date, default: Date.now }
+});
+const SmartPracticeScore = mongoose.model('SmartPracticeScore', SmartPracticeScoreSchema);
+
+// Mock Interview Score schema
+const MockInterviewScoreSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  score: Number, // Average score out of 10
+  totalQuestions: { type: Number, default: 10 },
+  jobTitle: String,
+  timestamp: { type: Date, default: Date.now }
+});
+const MockInterviewScore = mongoose.model('MockInterviewScore', MockInterviewScoreSchema);
+
 // Store resume score (called from resume analyzer)
 app.post('/api/resume-score', async (req, res) => {
   if (!req.session.userId) {
@@ -351,6 +387,32 @@ app.post('/api/chat-sessions', async (req, res) => {
     res.json({ success: true, session });
   } catch (e) {
     res.status(500).json({ success: false, message: 'Failed to create session' });
+  }
+});
+
+// Delete chat session
+app.delete('/api/chat-sessions/:sessionId', async (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ success: false, message: 'Not authenticated' });
+  }
+  try {
+    const { sessionId } = req.params;
+    if (!sessionId) {
+      return res.status(400).json({ success: false, message: 'sessionId required' });
+    }
+    // Verify the session belongs to the user
+    const session = await ChatSession.findOne({ _id: sessionId, userId: req.session.userId });
+    if (!session) {
+      return res.status(404).json({ success: false, message: 'Session not found' });
+    }
+    // Delete all messages in the session
+    await ChatMessage.deleteMany({ sessionId });
+    // Delete the session itself
+    await ChatSession.deleteOne({ _id: sessionId });
+    res.json({ success: true, message: 'Session deleted successfully' });
+  } catch (e) {
+    console.error('Error deleting session:', e);
+    res.status(500).json({ success: false, message: 'Failed to delete session' });
   }
 });
 
@@ -693,5 +755,96 @@ function generateFallbackQuestions(type, count) {
   
   return questions;
 }
+
+// Save Smart Practice score
+app.post('/api/smart-practice-score', async (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ success: false, message: 'Not authenticated' });
+  }
+  const { score, totalQuestions, correctAnswers, stage, stageBreakdown, percentage } = req.body;
+  
+  if (typeof score !== 'number' || typeof totalQuestions !== 'number' || typeof correctAnswers !== 'number') {
+    return res.status(400).json({ success: false, message: 'Invalid score data' });
+  }
+  
+  try {
+    const entry = new SmartPracticeScore({
+      userId: req.session.userId,
+      score,
+      percentage: typeof percentage === 'number' ? percentage : score,
+      totalQuestions,
+      correctAnswers,
+      stage,
+      stageBreakdown: Array.isArray(stageBreakdown) ? stageBreakdown.slice(0, 10) : [],
+      timestamp: new Date()
+    });
+    
+    await entry.save();
+    res.json({ success: true });
+  } catch (e) {
+    console.error('Error saving practice score:', e);
+    res.status(500).json({ success: false, message: 'Failed to save practice score' });
+  }
+});
+
+// Get all Smart Practice scores for logged-in user
+app.get('/api/smart-practice-scores', async (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ success: false, message: 'Not authenticated' });
+  }
+  try {
+    const scores = await SmartPracticeScore.find({ userId: req.session.userId })
+      .sort({ timestamp: -1 })
+      .limit(20); // Return last 20 scores
+    res.json({ success: true, scores });
+  } catch (e) {
+    console.error('Error fetching practice scores:', e);
+    res.status(500).json({ success: false, message: 'Failed to fetch practice scores' });
+  }
+});
+
+// Save Mock Interview score
+app.post('/api/mock-interview-score', async (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ success: false, message: 'Not authenticated' });
+  }
+  const { score, jobTitle, timestamp } = req.body;
+  
+  if (typeof score !== 'number') {
+    return res.status(400).json({ success: false, message: 'Score must be a number' });
+  }
+  
+  try {
+    const entry = new MockInterviewScore({
+      userId: req.session.userId,
+      score,
+      totalQuestions: 10,
+      jobTitle: jobTitle || 'Unknown',
+      timestamp: timestamp ? new Date(timestamp) : new Date()
+    });
+    
+    await entry.save();
+    res.json({ success: true });
+  } catch (e) {
+    console.error('Error saving mock interview score:', e);
+    res.status(500).json({ success: false, message: 'Failed to save mock interview score' });
+  }
+});
+
+// Get all Mock Interview scores for logged-in user
+app.get('/api/mock-interview-scores', async (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ success: false, message: 'Not authenticated' });
+  }
+  try {
+    const scores = await MockInterviewScore.find({ userId: req.session.userId })
+      .sort({ timestamp: -1 })
+      .limit(20); // Return last 20 scores
+    res.json({ success: true, scores });
+  } catch (e) {
+    console.error('Error fetching mock interview scores:', e);
+    res.status(500).json({ success: false, message: 'Failed to fetch mock interview scores' });
+  }
+});
 
 app.listen(3000, () => console.log('Server running on http://localhost:3000'));

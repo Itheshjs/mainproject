@@ -35,7 +35,8 @@ const AnalyzeResumeOutputSchema = z.object({
 export type AnalyzeResumeOutput = z.infer<typeof AnalyzeResumeOutputSchema>;
 
 export async function analyzeResume(input: AnalyzeResumeInput): Promise<AnalyzeResumeOutput> {
-  return analyzeResumeFlow(input);
+  const {output} = await prompt(input);
+  return output!;
 }
 
 const prompt = ai.definePrompt({
@@ -71,12 +72,35 @@ const analyzeResumeFlow = ai.defineFlow(
     outputSchema: AnalyzeResumeOutputSchema,
   },
   async input => {
-    try {
-      const {output} = await prompt(input);
-      return output!;
-    } catch (e) {
-      console.error('Error in analyzeResumeFlow:', e);
-      throw e;
+    // Add retry logic for rate limiting
+    let attempts = 0;
+    const maxAttempts = 3;
+    const baseDelay = 1000; // 1 second
+    
+    while (attempts < maxAttempts) {
+      try {
+        const {output} = await prompt(input);
+        return output!;
+      } catch (e: any) {
+        attempts++;
+        console.error(`Attempt ${attempts} failed:`, e.message);
+        // Check if it's a rate limiting error
+        if (e.message && (e.message.includes('429') || e.message.includes('quota') || e.message.includes('Too Many Requests'))) {
+          if (attempts < maxAttempts) {
+            // Exponential backoff
+            const delay = baseDelay * Math.pow(2, attempts - 1);
+            console.log(`Rate limited. Retrying in ${delay}ms... (attempt ${attempts}/${maxAttempts})`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+            continue;
+          } else {
+            // Max attempts reached, throw a more user-friendly error
+            throw new Error('You have exceeded the API rate limit. Please wait a minute and try again, or consider upgrading your Google AI API plan.');
+          }
+        }
+        // If not a rate limit error, rethrow immediately
+        throw e;
+      }
     }
+    throw new Error('Failed to analyze resume after multiple attempts.');
   }
 );

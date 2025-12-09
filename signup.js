@@ -106,7 +106,11 @@ document.getElementById('signupForm').addEventListener('submit', async (e) => {
 
   function setItemState(el, ok) {
     if (!el) return;
-    el.style.color = ok ? 'green' : 'inherit';
+    // Remove any existing validation classes
+    el.classList.remove('valid', 'invalid');
+    // Add appropriate class based on validation state
+    el.classList.add(ok ? 'valid' : 'invalid');
+    // Update the text content with icons
     el.textContent = el.textContent.replace(/^✅\s*|^\u2713\s*|^\u274C\s*|^❌\s*/, '');
     el.textContent = (ok ? '✅ ' : '❌ ') + el.textContent;
   }

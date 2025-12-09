@@ -2,9 +2,9 @@
 // Stages:
 // 1) Aptitude MCQs (scored)
 // 2) Technical MCQs (scored)
-// 3) Technical Interview (open-ended)
-// 4) HR Interview (open-ended)
-// Final summary shows total score from MCQ stages
+// 3) Technical Scenario MCQs (scored)
+// 4) HR Scenario MCQs (scored)
+// Final summary shows total score across all MCQ stages
 
 (() => {
   function onReady(fn) {
@@ -47,31 +47,50 @@
     let currentStageIndex = 0;
     let currentQuestionIndex = 0;
     let score = 0; // MCQs only
+    const stageStats = stages.map(stage => ({
+      title: stage.title,
+      kind: stage.kind,
+      correct: 0,
+      total: stage.questions.length
+    }));
 
     renderCurrent();
 
     function renderCurrent() {
       const stage = stages[currentStageIndex];
-      const q = stage.questions[currentQuestionIndex];
+      let q = stage.questions[currentQuestionIndex];
       const isMCQ = Array.isArray(q.options) && q.options.length > 0 && typeof q.answer === 'number';
+      if (!isMCQ) {
+        const fallbackPool = fallbackMCQs(careerGoal, preferredTech, stage.kind);
+        if (fallbackPool.length) {
+          const fallback = fallbackPool[currentQuestionIndex % fallbackPool.length];
+          stage.questions[currentQuestionIndex] = fallback;
+          q = fallback;
+        } else {
+          console.warn('Missing MCQ data; skipping to next question.');
+          appendNextButton();
+          return;
+        }
+      }
+      
+      // Remove 'Powered by: Gemini AI' text from the question if it exists
+      const cleanQuestion = q.question.replace(/\s*Powered by: Gemini AI\s*/gi, '').trim();
 
     app.innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
           <div><b>${escapeHTML(stage.title)}</b></div>
           <div style="color:#666;">Question ${currentQuestionIndex + 1} of 5</div>
       </div>
-        <div class="question" style="font-size:1.05rem;margin-bottom:12px;">${escapeHTML(q.question)}</div>
-        ${isMCQ ? renderMCQForm(q) : renderOpenForm()}
+        <div class="question" style="font-size:1.05rem;margin-bottom:12px;">${escapeHTML(cleanQuestion)}</div>
+        ${renderMCQForm(q)}
         <div id="feedback" class="feedback" style="margin-top:12px;"></div>
         <div style="margin-top:16px;color:#666;">Progress: Stage ${currentStageIndex + 1} of 4</div>
-  <div style="margin-top:8px;color:#888;font-size:0.9rem;">Powered by: Gemini AI</div>
       `;
 
       const form = document.getElementById('answerForm');
       form.onsubmit = (e) => {
     e.preventDefault();
-        if (isMCQ) handleMCQSubmit(q);
-        else handleOpenSubmit(q);
+        handleMCQSubmit(q);
       };
     }
 
@@ -85,23 +104,18 @@
       const selectedIndex = parseInt(selected.value, 10);
         if (selectedIndex === q.answer) {
         score += 1;
+        if (stageStats[currentStageIndex]) {
+          stageStats[currentStageIndex].correct = Math.min(
+            stageStats[currentStageIndex].correct + 1,
+            stageStats[currentStageIndex].total
+          );
+        }
         feedback.innerHTML = '<span style="color:green;font-weight:600;">Correct!</span>' + (q.explanation ? `<div style="margin-top:6px;">${escapeHTML(q.explanation)}</div>` : '');
       } else {
         feedback.innerHTML = '<span style="color:#d9534f;font-weight:600;">Wrong.</span>' +
           (typeof q.answer === 'number' && q.options[q.answer] ? ` <span>Correct: <b>${escapeHTML(q.options[q.answer])}</b></span>` : '') +
           (q.explanation ? `<div style="margin-top:6px;">${escapeHTML(q.explanation)}</div>` : '');
       }
-      appendNextButton();
-    }
-
-    function handleOpenSubmit(q) {
-      const text = document.querySelector('textarea[name="textAnswer"]').value.trim();
-      const feedback = document.getElementById('feedback');
-      if (text.length < 5) {
-        feedback.textContent = 'Please provide a more detailed answer.';
-        return;
-      }
-      feedback.innerHTML = 'Submitted.' + (q.explanation ? ` <span>${escapeHTML(q.explanation)}</span>` : '');
       appendNextButton();
     }
 
@@ -130,21 +144,82 @@
   }
 }
 
-function showSummary() {
-      // Score is from stage 1 and 2 (10 questions)
-      const totalMCQs = 10;
-  app.innerHTML = `
+async function showSummary() {
+      const totalMCQs = stageStats.reduce((sum, stat) => sum + stat.total, 0);
+      const percentageScore = Math.round(totalMCQs ? (score / totalMCQs) * 100 : 0);
+      const stageBreakdown = stageStats.map(stat => {
+        const pct = stat.total ? Math.round((stat.correct / stat.total) * 100) : 0;
+        return {
+          title: stat.title,
+          kind: stat.kind,
+          correct: stat.correct,
+          total: stat.total,
+          percentage: pct
+        };
+      });
+      const stageGraph = stageBreakdown.map(stat => `
+        <div class="stage-row">
+          <div class="stage-row__header">
+            <span>${escapeHTML(stat.title)}</span>
+            <span>${stat.correct}/${stat.total} (${stat.percentage}%)</span>
+          </div>
+          <div class="stage-row__bar">
+            <div class="stage-row__bar-fill" style="width:${stat.percentage}%;"></div>
+          </div>
+        </div>
+      `).join('');
+      const delta = stageBreakdown.reduce((acc, stat) => acc + stat.correct, 0);
+      
+      // Save the practice score
+      try {
+        const response = await fetch(window.API_CONFIG ? window.API_CONFIG.BASE_URL + '/api/smart-practice-score' : 'http://localhost:3000/api/smart-practice-score', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            score: percentageScore,
+            percentage: percentageScore,
+            totalQuestions: totalMCQs,
+            correctAnswers: score,
+            stage: 'All Stages',
+            stageBreakdown
+          })
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to save practice score');
+        }
+      } catch (error) {
+        console.error('Error saving practice score:', error);
+        // Continue showing the summary even if saving fails
+      }
+      
+      app.innerHTML = `
         <div class="stage-title" style="font-size:1.25rem;margin-bottom:10px;">Interview Complete!</div>
         <div class="summary" style="background:#f7fafd;border-radius:10px;padding:16px;">
-          <p><b>Total MCQ Score:</b> ${score} / ${totalMCQs}</p>
-          <p><b>Target Role:</b> ${escapeHTML(careerGoal)}</p>
-          <p><b>Primary Tech:</b> ${escapeHTML(preferredTech)}</p>
-          <p style="margin-top:8px;">Keep practicing. Focus on areas where your answers were uncertain or incorrect.</p>
+          <div style="display:flex;flex-wrap:wrap;gap:20px;align-items:center;">
+            <div style="flex:1;min-width:220px;">
+              <p style="margin:0 0 8px 0;"><b>Total MCQ Score:</b> ${score} / ${totalMCQs} (${percentageScore}%)</p>
+              <p style="margin:0;"><b>Target Role:</b> ${escapeHTML(careerGoal)}</p>
+              <p style="margin:0;"><b>Primary Tech:</b> ${escapeHTML(preferredTech)}</p>
+            </div>
+            <div style="min-width:220px;">
+              <div style="font-size:0.9rem;color:#475569;">Overall Accuracy</div>
+              <div style="font-size:2.25rem;font-weight:700;color:#0f172a;">${percentageScore}%</div>
+              <div style="font-size:0.85rem;color:#64748b;">${delta}/${totalMCQs} correct</div>
+            </div>
+          </div>
+          <div class="stage-breakdown">
+            <h3 style="margin:12px 0 4px 0;">Stage Performance</h3>
+            ${stageGraph}
+          </div>
         </div>
         <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
           <button class="login-btn" onclick="window.location.href='index.html'">Back to Home</button>
           <button class="signup-btn" onclick="window.location.reload()">Restart Simulation</button>
-    </div>
+        </div>
       `;
     }
 
@@ -173,22 +248,22 @@ function showSummary() {
     // Builders
     // ===== Gemini-backed stage builders =====
     async function buildAllStagesWithGemini(goal, tech) {
-      const [aptitude, technical, techOpen, hrOpen] = await Promise.all([
+      const [aptitude, technical, technicalInterview, hrInterview] = await Promise.all([
         generateMCQSet(goal, tech, 'aptitude'),
         generateMCQSet(goal, tech, 'technical'),
-        generateOpenSet(goal, tech, 'technical_interview'),
-        generateOpenSet(goal, tech, 'hr_interview'),
+        generateMCQSet(goal, tech, 'technical_interview'),
+        generateMCQSet(goal, tech, 'hr_interview'),
       ]);
       return [
-        { title: 'Stage 1 – Aptitude Test', questions: aptitude },
-        { title: 'Stage 2 – Technical Test', questions: technical },
-        { title: 'Stage 3 – Technical Interview', questions: techOpen },
-        { title: 'Stage 4 – HR Interview', questions: hrOpen },
+        { title: 'Stage 1 – Aptitude Test', kind: 'aptitude', questions: aptitude },
+        { title: 'Stage 2 – Technical Test', kind: 'technical', questions: technical },
+        { title: 'Stage 3 – Technical Interview (MCQ)', kind: 'technical_interview', questions: technicalInterview },
+        { title: 'Stage 4 – HR Interview (MCQ)', kind: 'hr_interview', questions: hrInterview },
       ];
     }
 
     const GEMINI_API_KEY = "AIzaSyC3IkDvwqAtlLO5cdrRx9ZEr0z0X_gWH3k";
-    const GEMINI_URL = `http://localhost:3000/api/gemini-generate`;
+    const GEMINI_URL = window.API_CONFIG ? window.API_CONFIG.GEMINI_GENERATE : `http://localhost:3000/api/gemini-generate`;
 
     const PREV_Q_KEY = (kind, goal, tech) => `practice_prev_questions_${kind}_${(goal||'').toLowerCase()}_${(tech||'').toLowerCase()}`;
     function loadPrevQuestions(kind, goal, tech) {
@@ -223,21 +298,7 @@ function showSummary() {
       const variants = buildMCQPrompts(kind, goal, tech, schema, prevSnippet, profileTag);
       const chosen = sample(variants, 2);
       const texts = await Promise.all(chosen.map(p => fetchGemini(p, { temperature: 1.05, topP: 0.98 })));
-      let merged = mergeMCQResults(texts) || fallbackMCQs(goal, tech);
-      merged = shuffleArray(merged);
-      savePrevQuestions(kind, goal, tech, merged.map(i => i.question));
-      return merged.slice(0, 5);
-    }
-
-    async function generateOpenSet(goal, tech, kind) {
-      const prev = loadPrevQuestions(kind, goal, tech);
-      const prevSnippet = prev.length ? `Avoid repeating any of these prompts (verbatim or paraphrased): ${JSON.stringify(prev.slice(0, 50))}.` : '';
-      const schema = `Return ONLY a strict JSON array of 5 objects, each: {"question": string, "explanation": string}. No markdown.`;
-      const profileTag = fingerprint(goal, tech);
-      const variants = buildOpenPrompts(kind, goal, tech, schema, prevSnippet, profileTag);
-      const chosen = sample(variants, 2);
-      const texts = await Promise.all(chosen.map(p => fetchGemini(p, { temperature: 1.05, topP: 0.98 })));
-      let merged = mergeOpenResults(texts) || fallbackOpen(goal, tech, kind);
+      let merged = mergeMCQResults(texts) || fallbackMCQs(goal, tech, kind);
       merged = shuffleArray(merged);
       savePrevQuestions(kind, goal, tech, merged.map(i => i.question));
       return merged.slice(0, 5);
@@ -281,17 +342,9 @@ function showSummary() {
       return clean.length === 5 ? clean : null;
     }
 
-    function validateOpen(text) {
-      const arr = tryParseJSON(text);
-      if (!Array.isArray(arr)) return null;
-      const clean = arr.filter(it => it && typeof it.question === 'string')
-        .map(it => ({ question: it.question, explanation: it.explanation || 'Answer concisely with examples.' }));
-      return clean.length === 5 ? clean : null;
-    }
-
     // Fallbacks if API fails
-    function fallbackMCQs(goal, tech) {
-      const bank = [
+    function fallbackMCQs(goal, tech, kind) {
+      const base = [
         { question: `Which data structure best fits prioritizing user tickets for a ${goal}?`, options: ['Stack','Priority Queue','Queue','Set'], answer: 1, explanation: 'Priority Queue processes highest priority first.' },
         { question: `In ${tech}, what is the output type of typeof null?`, options: ['null','object','undefined','string'], answer: 1, explanation: 'Legacy quirk: typeof null === "object".' },
         { question: `Best structure for fast userId → profile lookup in ${tech}?`, options: ['Array','Map/Hash','Queue','List'], answer: 1, explanation: 'Hash maps provide average O(1) key lookup.' },
@@ -301,35 +354,34 @@ function showSummary() {
         { question: `For a ${goal}, which is NOT stable sorting?`, options: ['Merge Sort','Insertion Sort','Heap Sort','Tim Sort'], answer: 2, explanation: 'Heap sort is not stable.' },
         { question: `What does debounce help with in ${tech}?`, options: ['Batch API calls','Limit rapid triggers','Memoize results','Parallelize code'], answer: 1, explanation: 'Debounce limits rapid triggers.' }
       ];
-      return shuffleArray(bank).slice(0,5);
-    }
-
-    function fallbackOpen(goal, tech, kind) {
-      if (kind === 'technical_interview') {
-        const bankT = [
-          { question: `Explain a project in ${tech} relevant to a ${goal}.`, explanation: 'Discuss design, trade-offs, and impact.' },
-          { question: `How to profile and optimize a slow ${tech} endpoint?`, explanation: 'Describe measurement, bottlenecks, and fixes.' },
-          { question: `Design a simple rate limiter for a ${goal} app.`, explanation: 'Consider token bucket/sliding window.' },
-          { question: `How do you structure error handling in ${tech}?`, explanation: 'Show patterns and consistency.' },
-          { question: `Pick a data structure you often use in ${tech} and why.`, explanation: 'Tie to use-cases and complexity.' }
-        ];
-        return shuffleArray(bankT).slice(0,5);
-      }
-      const bankH = [
-        { question: `Why ${goal}?`, explanation: 'Connect motivation to role and impact.' },
-        { question: `Tell me about a conflict you resolved.`, explanation: 'Use STAR; show empathy and outcomes.' },
-        { question: `How do you handle pressure and deadlines?`, explanation: 'Prioritization and communication.' },
-        { question: `What is your biggest learning recently?`, explanation: 'Be specific and actionable.' },
-        { question: `Where do you see yourself in 2 years as a ${goal}?`, explanation: 'Show growth plan aligned with role.' },
-        { question: `Describe feedback you received and how you acted on it.`, explanation: 'Demonstrate growth mindset.' }
+      const techInterview = [
+        { question: `You inherit a ${tech} microservice failing under load. What is your first diagnostic step?`, options: ['Add retry loops','Profile and inspect metrics','Scale database writes blindly','Disable logging'], answer: 1, explanation: 'Start with observability to target the fix.' },
+        { question: `A recruiter asks how you ensure API backwards compatibility as a ${goal}. Best answer?`, options: ['Always rewrite clients','Version APIs and add contract tests','Ship breaking changes if faster','Ignore as long as docs update'], answer: 1, explanation: 'Versioning plus contract tests preserves clients.' },
+        { question: `During a design interview, you are asked about caching strategy. What should you confirm first?`, options: ['Deployment schedule','Consistency needs and TTL','Office location','Team size'], answer: 1, explanation: 'Caching approach depends on required consistency and freshness.' },
+        { question: `Debugging a failing CI pipeline in ${tech}, what helps narrow the issue fastest?`, options: ['Re-run blindly','Check commit diff + failing step logs','Roll back the repo','Clear npm cache'], answer: 1, explanation: 'Logs plus diff point to root cause quickly.' },
+        { question: `System design interviewer asks about messaging. Which trade-off matters most?`, options: ['Queue color','Async vs sync delivery guarantees','Number of interns','UI theme'], answer: 1, explanation: 'Reliability vs latency is central.' }
       ];
-      return shuffleArray(bankH).slice(0,5);
+      const hrInterview = [
+        { question: `A teammate is missing deadlines repeatedly. What is your first move?`, options: ['Escalate immediately','Offer support and understand blockers','Ignore it','Publicly call them out'], answer: 1, explanation: 'Start with empathy and identify root causes.' },
+        { question: `You disagree with your manager's approach. How do you respond?`, options: ['Quit instantly','Discuss data and propose alternatives','Rally others against manager','Do nothing at all'], answer: 1, explanation: 'Constructive feedback with data shows maturity.' },
+        { question: `A cross-functional partner sends an urgent request while you are swamped. Best reaction?`, options: ['Say yes then miss deadlines','Clarify priority trade-offs','Ignore them','Complain on social media'], answer: 1, explanation: 'Clarify priorities and negotiate timelines.' },
+        { question: `What shows growth mindset in a ${goal} HR round?`, options: ['Avoiding feedback','Sharing a lesson from failure','Blaming others','Hiding mistakes'], answer: 1, explanation: 'Reflecting on failures demonstrates learning.' },
+        { question: `How do you showcase cultural fit?`, options: ['Describe collaboration habits','Talk only about salary','Criticize prior teams','Claim you never make mistakes'], answer: 0, explanation: 'Collaboration examples highlight fit.' }
+      ];
+      if (kind === 'technical_interview') {
+        return shuffleArray(techInterview).slice(0, 5);
+      }
+      if (kind === 'hr_interview') {
+        return shuffleArray(hrInterview).slice(0, 5);
+      }
+      return shuffleArray(base).slice(0, 5);
     }
 
     // Utilities
     async function getUserProfile() {
       try {
-        const res = await fetch('http://localhost:3000/api/profile', { credentials: 'include' });
+        const apiUrl = window.API_CONFIG ? window.API_CONFIG.PROFILE : 'http://localhost:3000/api/profile';
+        const res = await fetch(apiUrl, { credentials: 'include' });
         const data = await res.json();
         return data && data.success ? data.user : null;
       } catch (_) {
@@ -371,15 +423,6 @@ function showSummary() {
       `;
     }
 
-    function renderOpenForm() {
-      return `
-        <form id="answerForm">
-          <textarea name="textAnswer" rows="4" style="width:100%;margin-top:6px;" placeholder="Type your answer..."></textarea>
-          <button class="btn" type="submit" style="margin-top:8px;">Submit</button>
-        </form>
-      `;
-    }
-
     function escapeHTML(str) {
       return String(str)
         .replace(/&/g, '&amp;')
@@ -411,19 +454,26 @@ function showSummary() {
         `Craft 5 MCQs on ${tech} language/runtime specifics, tooling, and practical design for a ${goal}. ${schema} ${prevSnippet} Avoid prior patterns. Tag:${uniqueTag()} PF:${profileTag}`,
         `Create 5 MCQs for ${goal} in ${tech} emphasizing correctness, performance, and best practices. ${schema} ${prevSnippet} Must be unique. Tag:${uniqueTag()} PF:${profileTag}`
       ];
-      return kind === 'aptitude' ? baseApt : baseTech;
-    }
-
-    function buildOpenPrompts(kind, goal, tech, schema, prevSnippet, profileTag) {
-      const baseTech = [
-        `Compose 5 technical interview prompts for a ${goal} specializing in ${tech}. Cover design, debugging, and trade-offs. Include an "explanation" hint. ${schema} ${prevSnippet} Fresh only. Tag:${uniqueTag()} PF:${profileTag}`,
-        `Write 5 open-ended ${tech} prompts for a ${goal} about architecture and problem-solving. Provide brief guidance in "explanation". ${schema} ${prevSnippet} No repeats. Tag:${uniqueTag()} PF:${profileTag}`
+      const baseTechInterview = [
+        `Draft 5 scenario-based MCQs for a ${goal} that simulate technical interview follow-ups in ${tech}. Focus on architecture choices, debugging tactics, and trade-offs. ${schema} ${prevSnippet} Tag:${uniqueTag()} PF:${profileTag}`,
+        `Provide 5 MCQs that mirror live technical interview questions for ${goal} professionals using ${tech}. Stress reasoning, scalability, and integrations. ${schema} ${prevSnippet} Tag:${uniqueTag()} PF:${profileTag}`
       ];
       const baseHR = [
-        `Create 5 HR interview prompts tailored to a ${goal} (behavioral, motivation, teamwork). Include guidance in "explanation". ${schema} ${prevSnippet} New content only. Tag:${uniqueTag()} PF:${profileTag}`,
-        `Provide 5 HR-style questions for a ${goal} with succinct guidance in "explanation". ${schema} ${prevSnippet} Avoid past prompts. Tag:${uniqueTag()} PF:${profileTag}`
+        `Generate 5 MCQs that test behavioral judgement, stakeholder communication, and cultural fit for a ${goal}. Situations should feel like HR interview prompts with multiple-choice responses. ${schema} ${prevSnippet} Tag:${uniqueTag()} PF:${profileTag}`,
+        `Create 5 situational MCQs for HR style interviews targeting a ${goal}. Each question should assess decision making, ethics, or teamwork dynamics. ${schema} ${prevSnippet} Tag:${uniqueTag()} PF:${profileTag}`
       ];
-      return kind === 'technical_interview' ? baseTech : baseHR;
+      switch (kind) {
+        case 'aptitude':
+          return baseApt;
+        case 'technical':
+          return baseTech;
+        case 'technical_interview':
+          return baseTechInterview;
+        case 'hr_interview':
+          return baseHR;
+        default:
+          return baseTech;
+      }
     }
 
     function sample(arr, n) {
@@ -439,24 +489,6 @@ function showSummary() {
       const all = [];
       for (const t of texts) {
         const arr = validateMCQs(t);
-        if (arr) all.push(...arr);
-      }
-      const seen = new Set();
-      const out = [];
-      for (const q of all) {
-        const key = (q.question || '').trim().toLowerCase();
-        if (!key || seen.has(key)) continue;
-        seen.add(key);
-        out.push(q);
-        if (out.length >= 5) break;
-      }
-      return out.length ? out : null;
-    }
-
-    function mergeOpenResults(texts) {
-      const all = [];
-      for (const t of texts) {
-        const arr = validateOpen(t);
         if (arr) all.push(...arr);
       }
       const seen = new Set();
@@ -571,44 +603,6 @@ function showSummary() {
         localStorage.setItem(GLOBAL_QUESTION_HISTORY_KEY, JSON.stringify(kept));
       } catch (_) {}
     })();
-
-    // Fill missing questions with unique fallbacks
-    function fillWithUniqueFallbacks(existingQuestions, goal, tech, kind, targetCount) {
-      if (existingQuestions.length >= targetCount) {
-        return existingQuestions;
-      }
-      
-      const needed = targetCount - existingQuestions.length;
-      const fallbacks = kind === 'aptitude' || kind === 'technical' 
-        ? fallbackMCQs(goal, tech) 
-        : fallbackOpen(goal, tech, kind);
-      
-      const uniqueFallbacks = [];
-      const existingKeys = new Set(existingQuestions.map(q => q.question.trim().toLowerCase()));
-      
-      for (const fallback of fallbacks) {
-        if (uniqueFallbacks.length >= needed) break;
-        
-        const fallbackKey = fallback.question.trim().toLowerCase();
-        
-        // Check if this fallback is already in existing questions
-        if (existingKeys.has(fallbackKey)) {
-          continue;
-        }
-        
-        // Check if this fallback is in global history
-        if (isQuestionInHistory(fallbackKey)) {
-          continue;
-        }
-        
-        // Add to unique fallbacks
-        uniqueFallbacks.push(fallback);
-        existingKeys.add(fallbackKey);
-        addQuestionToHistory(fallbackKey);
-      }
-      
-      return [...existingQuestions, ...uniqueFallbacks];
-    }
 
     // Shuffle array function
     function shuffleArray(array) {

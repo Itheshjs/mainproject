@@ -13,8 +13,13 @@ app = Flask(__name__)
 CORS(app)
 
 # --- Config ---
-OPENROUTER_API_KEY = "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"
+# Get API key from environment variable or use default (for development)
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "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")
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1/chat/completions"
+
+# Validate API key
+if not OPENROUTER_API_KEY or OPENROUTER_API_KEY == "":
+    print("WARNING: OPENROUTER_API_KEY is not set. Please set it in .env file or environment variable.")
 
 VALID_JOB_KEYWORDS = [
     "developer", "engineer", "designer", "manager", "analyst", "tester",
@@ -75,14 +80,16 @@ def ask_question():
 
         # --- If interview is over (10 answers given) ---
         if len(history) >= 10:
-            avg_score = round(sum(scores) / len(scores), 1) if scores else 0
+            avg_score_10 = round(sum(scores) / len(scores), 1) if scores else 0
+            # Convert to 0-100 scale (multiply by 10)
+            avg_score_100 = round(avg_score_10 * 10)
 
             closing_prompt = f"""
 You are an interviewer finishing a mock interview for the role of {job_title}.
 Here is the full Q&A so far:
 {chr(10).join(history)}
 
-The candidate's total average score was {avg_score}/10.
+The candidate's total average score was {avg_score_100}/100.
 
 Now write a short, realistic closing message as in real interviews:
 - Mention the candidate's performance (strong areas & areas to improve)
@@ -104,7 +111,7 @@ Now write a short, realistic closing message as in real interviews:
                 "question": closing_message,
                 "stage": "closing",
                 "is_final": True,
-                "average_score": avg_score
+                "average_score": avg_score_100  # Return score out of 100
             })
 
         # --- Otherwise, ask next question + score last answer ---
@@ -163,8 +170,8 @@ Respond **strictly in JSON** like this:
         return jsonify({
             "question": next_question,
             "feedback": feedback,
-            "score": score,
-            "average_score": round(sum(scores) / len(scores), 1),
+            "score": score,  # Still track internally as 0-10, but don't show to user
+            "average_score": round(sum(scores) / len(scores), 1),  # Internal tracking only
             "stage": current_stage,
             "is_final": False,
             "scores": scores

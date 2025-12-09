@@ -78,6 +78,7 @@
     let jobTitle = '';
     let chatHistory = [];
     let currentStage = 'introduction';
+    let scores = [];
 
     document.getElementById('startInterview').addEventListener('click', async () => {
       const fileInput = document.getElementById('resume');
@@ -144,7 +145,7 @@
       // Add to history
       chatHistory.push(`Interviewer: ${currentQuestion}\nCandidate: ${message}`);
       
-      // Get next question
+      // Get next question (will include score for previous answer)
       await askQuestion();
     }
 
@@ -161,6 +162,7 @@
             resume: resumeText,
             job: jobTitle,
             history: chatHistory,
+            scores: scores,
             stage: currentStage
           })
         });
@@ -173,6 +175,11 @@
         currentQuestion = data.question;
         currentStage = data.stage;
         
+        // Store score if provided (for previous answer) - but don't display during interview
+        if (data.score !== undefined && !data.is_final) {
+          scores.push(data.score);
+        }
+        
         // Update stage indicator
         const stageIndicator = document.getElementById('stageIndicator');
         stageIndicator.textContent = `Current Stage: ${currentStage.charAt(0).toUpperCase() + currentStage.slice(1)}`;
@@ -180,14 +187,52 @@
         // Add bot message to chat
         addMessageToChat('bot', currentQuestion);
         
-        // If it's the final stage, disable input
+        // If it's the final stage, show final score and save
         if (data.is_final) {
           document.getElementById('userInput').disabled = true;
           document.getElementById('sendButton').disabled = true;
+          
+          // Score is already on 0-100 scale from backend
+          if (data.average_score !== undefined) {
+            const finalScore = Math.round(data.average_score); // Score is already 0-100
+            addMessageToChat('bot', `\n🎯 Final Interview Score: ${finalScore}/100`);
+            await saveMockInterviewScore(finalScore, jobTitle);
+          }
         }
       } catch (error) {
         console.error('Error:', error);
         addMessageToChat('bot', 'Sorry, there was an error getting the next question. Please try again.');
+      }
+    }
+    
+    async function saveMockInterviewScore(score, jobTitle) {
+      try {
+        // Get API config from parent window or use default
+        const apiBase = window.parent && window.parent.API_CONFIG 
+          ? window.parent.API_CONFIG.BASE_URL 
+          : 'http://localhost:3000';
+        
+        // Score is already in 0-100 scale
+        const response = await fetch(`${apiBase}/api/mock-interview-score`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            score: score,  // Score is already 0-100
+            jobTitle: jobTitle,
+            timestamp: new Date().toISOString()
+          })
+        });
+        
+        if (response.ok) {
+          console.log('Mock interview score saved successfully');
+        } else {
+          console.error('Failed to save mock interview score');
+        }
+      } catch (error) {
+        console.error('Error saving mock interview score:', error);
       }
     }
 
@@ -199,38 +244,6 @@
       chatContainer.appendChild(messageDiv);
       chatContainer.scrollTop = chatContainer.scrollHeight;
     }
-    async function submitAnswer(answer) {
-    const response = await fetch("/ask", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            resume: resumeText,
-            job: jobTitle,
-            history: [...history, answer],
-            scores: scoresArray
-        })
-    });
-
-    const data = await response.json();
-
-    // Update history
-    history.push(answer);
-
-    // Store score
-    if(data.score !== undefined){
-        scoresArray.push(data.score);
-    }
-
-    // Display next question
-    document.getElementById("question").innerText = data.question;
-
-    // Display feedback and current score
-    if(data.feedback){
-        document.getElementById("feedback").innerText = `Feedback: ${data.feedback}`;
-    }
-
-    document.getElementById("average-score").innerText = `Average Score: ${data.average_score || 0}`;
-}
 
   </script>
 </body>

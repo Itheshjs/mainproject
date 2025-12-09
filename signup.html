@@ -5,74 +5,401 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Sign Up - Interview Prep Pro</title>
   <link rel="stylesheet" href="style.css" />
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    body {
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    
+    .signup-container {
+      display: flex;
+      max-width: 1100px;
+      width: 100%;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+    
+    .signup-banner {
+      flex: 1;
+      background: linear-gradient(135deg, #4a6cf7 0%, #6c8dff 100%);
+      color: white;
+      padding: 50px 30px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      text-align: center;
+      min-height: 500px;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .signup-banner::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url('https://images.unsplash.com/photo-1573164713988-8665fc963095?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80') center/cover no-repeat;
+      opacity: 0.15;
+      z-index: 1;
+    }
+    
+    .signup-banner > * {
+      position: relative;
+      z-index: 2;
+    }
+    
+    .signup-banner h2 {
+      font-size: 2.2rem;
+      margin-bottom: 15px;
+      font-weight: 700;
+    }
+    
+    .signup-banner p {
+      font-size: 1.1rem;
+      line-height: 1.6;
+      opacity: 0.9;
+      max-width: 400px;
+      margin: 0 auto 25px;
+    }
+    
+    .benefits-list {
+      text-align: left;
+      max-width: 350px;
+      margin: 0 auto;
+    }
+    
+    .benefits-list li {
+      margin-bottom: 15px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    
+    .benefits-list li::before {
+      content: "✓";
+      color: #4CAF50;
+      font-weight: bold;
+      font-size: 1.2rem;
+    }
+    
+    .signup-form {
+      flex: 1.5;
+      padding: 40px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    
+    .logo-container {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    
+    .logo-container img {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      object-fit: cover;
+      margin-bottom: 15px;
+      border: 2px solid #4a6cf7;
+      box-shadow: 0 5px 15px rgba(74, 108, 247, 0.2);
+    }
+    
+    .logo-container h1 {
+      color: #333;
+      font-size: 1.8rem;
+      margin: 0;
+      font-weight: 700;
+    }
+    
+    .logo-container p {
+      color: #666;
+      font-size: 0.95rem;
+      margin-top: 5px;
+    }
+    
+    #signupForm h2 {
+      text-align: center;
+      margin-bottom: 10px;
+      color: #333;
+      font-size: 1.8rem;
+      font-weight: 600;
+    }
+    
+    .form-description {
+      text-align: center;
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 1rem;
+    }
+    
+    .form-section {
+      margin-bottom: 25px;
+      padding: 25px;
+      background: #f8f9ff;
+      border-radius: 15px;
+      border: 1px solid #eef1ff;
+    }
+    
+    .form-section h3 {
+      margin: 0 0 20px 0;
+      color: #4a6cf7;
+      font-size: 1.2rem;
+      font-weight: 600;
+      text-align: center;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: #444;
+      font-size: 0.95rem;
+    }
+    
+    input, select {
+      width: 100%;
+      padding: 14px 16px;
+      margin-bottom: 20px;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      font-size: 16px;
+      box-sizing: border-box;
+      transition: all 0.3s ease;
+      background: #fff;
+    }
+    
+    input:focus, select:focus {
+      outline: none;
+      border-color: #4a6cf7;
+      box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.1);
+    }
+    
+    select[multiple] {
+      height: 120px;
+    }
+    
+    button {
+      width: 100%;
+      padding: 15px;
+      background: linear-gradient(135deg, #4a6cf7 0%, #6c8dff 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 17px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-top: 10px;
+      box-shadow: 0 5px 15px rgba(74, 108, 247, 0.3);
+    }
+    
+    button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 20px rgba(74, 108, 247, 0.4);
+    }
+    
+    button:active {
+      transform: translateY(-1px);
+    }
+    
+    .field-error {
+      color: #e53e3e;
+      font-size: 0.875rem;
+      margin-top: -15px;
+      margin-bottom: 15px;
+    }
+    
+    #passwordHelp {
+      margin-top: -15px;
+      margin-bottom: 15px;
+    }
+    
+    #passwordHelp small {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #4a5568;
+    }
+    
+    #passwordHints {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    
+    #passwordHints li {
+      font-size: 0.85rem;
+      padding: 2px 0;
+      color: #718096;
+    }
+    
+    /* Add visual feedback for password requirements */
+    #passwordHints li.valid {
+      color: #38a169;
+      font-weight: 500;
+    }
+    
+    #passwordHints li.invalid {
+      color: #e53e3e;
+    }
+    
+    .form-footer {
+      text-align: center;
+      margin-top: 25px;
+      color: #666;
+      font-size: 1rem;
+    }
+    
+    .form-footer a {
+      color: #4a6cf7;
+      text-decoration: none;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+    
+    .form-footer a:hover {
+      text-decoration: underline;
+    }
+    
+    @media (max-width: 768px) {
+      .signup-container {
+        flex-direction: column;
+      }
+      
+      .signup-banner {
+        padding: 30px 20px;
+        min-height: 300px;
+      }
+      
+      .signup-form {
+        padding: 30px 20px;
+      }
+      
+      .signup-banner h2 {
+        font-size: 1.8rem;
+      }
+    }
+  </style>
 </head>
 <body>
-  <form id="signupForm">
-    <h2>Sign Up</h2>
-    <p class="form-description">Create your account and set up your job preparation profile</p>
+  <div class="signup-container">
+    <div class="signup-banner">
+      <h2>Start Your Journey</h2>
+      <p>Join our community of job seekers and professionals preparing for interviews with our platform.</p>
+      <ul class="benefits-list">
+        <li>Practice with realistic mock interviews</li>
+        <li>Get personalized feedback</li>
+        <li>Track your progress over time</li>
+        <li>Access to extensive question database</li>
+      </ul>
+    </div>
     
-    <div class="form-section">
-      <h3>Personal Information</h3>
-      <label for="username">Username</label>
-      <input type="text" id="username" name="username" placeholder="Username" required autocomplete="username" />
-      <label for="fullName">Full Name</label>
-      <input type="text" id="fullName" name="fullName" placeholder="Full Name" required autocomplete="name" />
-      <label for="email">Email</label>
-      <input type="email" id="email" name="email" placeholder="Email" required autocomplete="email" pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$" title="Please enter a valid email address" />
-      <div id="emailError" class="field-error"></div>
-      <label for="password">Password</label>
-      <input type="password" id="password" name="password" placeholder="Password" required autocomplete="new-password" minlength="8" pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{8,}$" title="Min 8 chars, include uppercase, lowercase, number, and special character" />
-      <div id="passwordHelp">
-        <small>Password must include:</small>
-        <ul id="passwordHints">
-          <li id="hint-length">At least 8 characters</li>
-          <li id="hint-lower">At least one lowercase letter</li>
-          <li id="hint-upper">At least one uppercase letter</li>
-          <li id="hint-number">At least one number</li>
-          <li id="hint-special">At least one special character (@#$%^&*! etc.)</li>
-        </ul>
+    <div class="signup-form">
+      <div class="logo-container">
+        <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Interview Prep Pro Logo" />
+        <h1>Interview Prep Pro</h1>
+        <p>Professional Interview Preparation Platform</p>
       </div>
-      <div id="passwordError" class="field-error"></div>
-      <label for="phone">Phone (optional)</label>
-      <input type="tel" id="phone" name="phone" placeholder="Phone (optional)" autocomplete="tel" />
-    </div>
-    
-    <div class="form-section">
-      <h3>Job Preparation Details</h3>
-      <label for="usertype">User Type</label>
-      <select id="usertype" name="usertype" required>
-        <option value="">Select User Type</option>
-        <option value="student">Student</option>
-        <option value="professional">Professional</option>
-        <option value="jobseeker">Job Seeker</option>
-      </select>
       
-      <label for="location">Location</label>
-      <input type="text" id="location" name="location" placeholder="Location (City, Country)" required autocomplete="address-level2" />
-      <label for="careerGoal">Career Goal</label>
-      <input type="text" id="careerGoal" name="careerGoal" placeholder="Career Goal (e.g., Software Engineer)" required autocomplete="organization-title" />
-      
-      <label for="preferredTechnologies">Preferred Technologies</label>
-      <select id="preferredTechnologies" name="preferredTechnologies" multiple required>
-        <option value="">Select Preferred Technologies (Hold Ctrl/Cmd to select multiple)</option>
-        <option value="Python">Python</option>
-        <option value="Java">Java</option>
-        <option value="JavaScript">JavaScript</option>
-        <option value="React">React</option>
-        <option value="Node.js">Node.js</option>
-        <option value="Web Development">Web Development</option>
-        <option value="Data Analysis">Data Analysis</option>
-        <option value="Machine Learning">Machine Learning</option>
-        <option value="DevOps">DevOps</option>
-        <option value="Mobile Development">Mobile Development</option>
-      </select>
+      <form id="signupForm">
+        <h2>Create Account</h2>
+        <p class="form-description">Set up your profile and start preparing for interviews</p>
+        
+        <div class="form-section">
+          <h3>Personal Information</h3>
+          <label for="username">Username</label>
+          <input type="text" id="username" name="username" placeholder="Choose a username" required autocomplete="username" />
+          <div id="usernameError" class="field-error"></div>
+          
+          <label for="fullName">Full Name</label>
+          <input type="text" id="fullName" name="fullName" placeholder="Enter your full name" required autocomplete="name" />
+          
+          <label for="email">Email Address</label>
+          <input type="email" id="email" name="email" placeholder="Enter your email" required autocomplete="email" pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$" title="Please enter a valid email address" />
+          <div id="emailError" class="field-error"></div>
+          
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" placeholder="Create a strong password" required autocomplete="new-password" minlength="8" pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{8,}$" title="Min 8 chars, include uppercase, lowercase, number, and special character" />
+          
+          <div id="passwordHelp">
+            <small>Password must include:</small>
+            <ul id="passwordHints">
+              <li id="hint-length">At least 8 characters</li>
+              <li id="hint-lower">At least one lowercase letter</li>
+              <li id="hint-upper">At least one uppercase letter</li>
+              <li id="hint-number">At least one number</li>
+              <li id="hint-special">At least one special character (@#$%^&*! etc.)</li>
+            </ul>
+          </div>
+          <div id="passwordError" class="field-error"></div>
+          
+          <label for="phone">Phone Number (Optional)</label>
+          <input type="tel" id="phone" name="phone" placeholder="Enter your phone number" autocomplete="tel" />
+          <div id="phoneError" class="field-error"></div>
+        </div>
+        
+        <div class="form-section">
+          <h3>Job Preparation Details</h3>
+          <label for="usertype">User Type</label>
+          <select id="usertype" name="usertype" required>
+            <option value="">Select your user type</option>
+            <option value="student">Student</option>
+            <option value="professional">Professional</option>
+            <option value="jobseeker">Job Seeker</option>
+          </select>
+          <div id="usertypeError" class="field-error"></div>
+          
+          <label for="location">Location</label>
+          <input type="text" id="location" name="location" placeholder="City, Country" required autocomplete="address-level2" />
+          <div id="locationError" class="field-error"></div>
+          
+          <label for="careerGoal">Career Goal</label>
+          <input type="text" id="careerGoal" name="careerGoal" placeholder="e.g., Software Engineer" required autocomplete="organization-title" />
+          <div id="careerGoalError" class="field-error"></div>
+          
+          <label for="preferredTechnologies">Preferred Technologies</label>
+          <select id="preferredTechnologies" name="preferredTechnologies" multiple required>
+            <option value="">Select technologies (Hold Ctrl/Cmd to select multiple)</option>
+            <option value="Python">Python</option>
+            <option value="Java">Java</option>
+            <option value="JavaScript">JavaScript</option>
+            <option value="React">React</option>
+            <option value="Node.js">Node.js</option>
+            <option value="Web Development">Web Development</option>
+            <option value="Data Analysis">Data Analysis</option>
+            <option value="Machine Learning">Machine Learning</option>
+            <option value="DevOps">DevOps</option>
+            <option value="Mobile Development">Mobile Development</option>
+          </select>
+          <div id="technologiesError" class="field-error"></div>
+        </div>
+        
+        <div id="formError" class="field-error form-error"></div>
+        <button type="submit">Create Account</button>
+        
+        <div class="form-footer">
+          <p>Already have an account? <a href="login.html">Sign In</a></p>
+        </div>
+      </form>
     </div>
-    
-    <div id="formError" class="field-error form-error"></div>
-    <button type="submit">Sign Up</button>
-    <p>Already have an account? <a href="login.html">Log In</a></p>
-  </form>
-  <script src="signup.js"></script>
+  </div>
   
+  <script src="signup.js"></script>
 </body>
-</html> 
+</html>

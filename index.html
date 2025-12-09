@@ -130,7 +130,11 @@
                 var resumeAnalyzer = document.getElementById('resume-analyzer-card');
                 if (resumeAnalyzer) {
                   resumeAnalyzer.addEventListener('click', function() {
-                    window.location.href = 'http://localhost:9002/';
+                    const url = window.API_CONFIG && window.API_CONFIG.RESUME_ANALYZER_URL 
+                      ? window.API_CONFIG.RESUME_ANALYZER_URL 
+                      : 'http://localhost:9002/';
+                    if (url) window.location.href = url;
+                    else alert('Resume Analyzer service is not available in production. Please use localhost for development.');
                   });
                 }
               });
@@ -140,7 +144,11 @@
                 var mockInterview = document.getElementById('mock-interview-card');
                 if (mockInterview) {
                   mockInterview.addEventListener('click', function() {
-                    window.location.href = 'http://localhost:5000';
+                    const url = window.API_CONFIG && window.API_CONFIG.MOCK_INTERVIEW_URL 
+                      ? window.API_CONFIG.MOCK_INTERVIEW_URL 
+                      : 'http://localhost:5000';
+                    if (url) window.location.href = url;
+                    else alert('Mock Interview service is not available in production. Please use localhost for development.');
                   });
                 }
               });
@@ -184,40 +192,95 @@
         <div id="progress-modal" class="profile-modal" style="display:none;">
           <div class="profile-modal-content" style="max-width:720px;">
             <div class="profile-modal-header">
-              <h2>Resume Progress</h2>
+              <h2>Track Progress</h2>
               <button id="close-progress" class="close-btn" aria-label="Close Progress">
                 <span class="material-symbols-rounded">close</span>
               </button>
             </div>
             <div class="profile-modal-body">
-              <div class="profile-info">
-                <div class="profile-section" style="display:flex; gap:20px; align-items:center; flex-wrap:wrap;">
-                  <div id="donut-wrapper" style="width:200px; height:200px; display:flex; align-items:center; justify-content:center;">
-                    <svg id="donut-svg" viewBox="0 0 120 120" width="200" height="200">
-                      <circle cx="60" cy="60" r="52" stroke="#e5e7eb" stroke-width="12" fill="none" />
-                      <circle id="donut-progress" cx="60" cy="60" r="52" stroke="#16a34a" stroke-width="12" fill="none" stroke-linecap="round" transform="rotate(-90 60 60)" stroke-dasharray="0 327" />
-                      <text id="donut-label" x="60" y="66" text-anchor="middle" font-size="20" font-weight="700" fill="#111827">--/100</text>
-                    </svg>
+              <div class="profile-info" style="display:flex; flex-direction:column; gap:32px;">
+                <section class="progress-stack">
+                  <h3 style="margin:0 0 16px 0;">Resume Analyzer Progress</h3>
+                  <div class="profile-section" style="display:flex; gap:20px; align-items:center; flex-wrap:wrap;">
+                    <div id="donut-wrapper" style="width:200px; height:200px; display:flex; align-items:center; justify-content:center;">
+                      <svg id="donut-svg" viewBox="0 0 120 120" width="200" height="200">
+                        <circle cx="60" cy="60" r="52" stroke="#e5e7eb" stroke-width="12" fill="none" />
+                        <circle id="donut-progress" cx="60" cy="60" r="52" stroke="#16a34a" stroke-width="12" fill="none" stroke-linecap="round" transform="rotate(-90 60 60)" stroke-dasharray="0 327" />
+                        <text id="donut-label" x="60" y="66" text-anchor="middle" font-size="20" font-weight="700" fill="#111827">--/100</text>
+                      </svg>
+                    </div>
+                    <div style="flex:1; min-width:260px;">
+                      <h3 style="margin:0 0 8px 0;">Latest Resume Score</h3>
+                      <div id="latest-meta" style="color:#6b7280;">—</div>
+                    </div>
                   </div>
-                  <div style="flex:1; min-width:260px;">
-                    <h3 style="margin:0 0 8px 0;">Latest Score</h3>
-                    <div id="latest-meta" style="color:#6b7280;">—</div>
+                  <div class="profile-section" id="latest-details" style="display:none;">
+                    <h3>Latest Analysis</h3>
+                    <div style="margin:6px 0;"><strong>Strengths:</strong> <span id="detail-strengths"></span></div>
+                    <div style="margin:6px 0;"><strong>Weaknesses:</strong> <span id="detail-weaknesses"></span></div>
+                    <div style="margin:6px 0;"><strong>Improvements:</strong> <span id="detail-improvements"></span></div>
+                    <div style="margin:6px 0;"><strong>Overall Feedback:</strong> <span id="detail-overall"></span></div>
                   </div>
-                </div>
-                <div class="profile-section" id="latest-details" style="display:none;">
-                  <h3>Latest Analysis</h3>
-                  <div style="margin:6px 0;"><strong>Strengths:</strong> <span id="detail-strengths"></span></div>
-                  <div style="margin:6px 0;"><strong>Weaknesses:</strong> <span id="detail-weaknesses"></span></div>
-                  <div style="margin:6px 0;"><strong>Improvements:</strong> <span id="detail-improvements"></span></div>
-                  <div style="margin:6px 0;"><strong>Overall Feedback:</strong> <span id="detail-overall"></span></div>
-                </div>
-                <div class="profile-section">
-                  <h3>Recent Scores</h3>
-                  <ul id="scores-list" style="list-style:none; padding:0; margin:0;"></ul>
-                </div>
-                <div class="profile-section">
-                  <small style="color:#6b7280;">Scores come from the Resume Analyzer app. Use Analyze + Save Score there, then open Track Progress here.</small>
-                </div>
+                  <div class="profile-section">
+                    <h3>Recent Resume Scores</h3>
+                    <ul id="scores-list" style="list-style:none; padding:0; margin:0;"></ul>
+                  </div>
+                  <div class="profile-section">
+                    <small style="color:#6b7280;">Scores come from the Resume Analyzer app. Use Analyze + Save Score there, then open Track Progress here.</small>
+                  </div>
+                </section>
+
+                <section class="progress-stack">
+                  <h3 style="margin:0 0 16px 0;">Smart Practice Progress</h3>
+                  <div class="profile-section" style="display:flex; gap:20px; align-items:center; flex-wrap:wrap;">
+                    <div id="practice-donut-wrapper" style="width:200px; height:200px; display:flex; align-items:center; justify-content:center;">
+                      <svg id="practice-donut-svg" viewBox="0 0 120 120" width="200" height="200">
+                        <circle cx="60" cy="60" r="52" stroke="#e5e7eb" stroke-width="12" fill="none" />
+                        <circle id="practice-donut-progress" cx="60" cy="60" r="52" stroke="#3b82f6" stroke-width="12" fill="none" stroke-linecap="round" transform="rotate(-90 60 60)" stroke-dasharray="0 327" />
+                        <text id="practice-donut-label" x="60" y="66" text-anchor="middle" font-size="20" font-weight="700" fill="#111827">--%</text>
+                      </svg>
+                    </div>
+                    <div style="flex:1; min-width:260px;">
+                      <h3 style="margin:0 0 8px 0;">Latest Practice Score</h3>
+                      <div id="practice-latest-meta" style="color:#6b7280;">—</div>
+                    </div>
+                  </div>
+                  <div class="profile-section" id="practice-breakdown-section" style="display:none;">
+                    <h3>Stage Breakdown</h3>
+                    <div id="practice-breakdown" class="stage-breakdown"></div>
+                  </div>
+                  <div class="profile-section">
+                    <h3>Recent Practice Attempts</h3>
+                    <ul id="practice-scores-list" style="list-style:none; padding:0; margin:0;"></ul>
+                  </div>
+                  <div class="profile-section">
+                    <small style="color:#6b7280;">Scores are saved automatically after completing a practice session in Smart Practice.</small>
+                  </div>
+                </section>
+
+                <section class="progress-stack">
+                  <h3 style="margin:0 0 16px 0;">Mock Interview Progress</h3>
+                  <div class="profile-section" style="display:flex; gap:20px; align-items:center; flex-wrap:wrap;">
+                    <div id="mock-donut-wrapper" style="width:200px; height:200px; display:flex; align-items:center; justify-content:center;">
+                      <svg id="mock-donut-svg" viewBox="0 0 120 120" width="200" height="200">
+                        <circle cx="60" cy="60" r="52" stroke="#e5e7eb" stroke-width="12" fill="none" />
+                        <circle id="mock-donut-progress" cx="60" cy="60" r="52" stroke="#8b5cf6" stroke-width="12" fill="none" stroke-linecap="round" transform="rotate(-90 60 60)" stroke-dasharray="0 327" />
+                        <text id="mock-donut-label" x="60" y="66" text-anchor="middle" font-size="20" font-weight="700" fill="#111827">--/100</text>
+                      </svg>
+                    </div>
+                    <div style="flex:1; min-width:260px;">
+                      <h3 style="margin:0 0 8px 0;">Latest Mock Interview Score</h3>
+                      <div id="mock-latest-meta" style="color:#6b7280;">—</div>
+                    </div>
+                  </div>
+                  <div class="profile-section">
+                    <h3>Recent Mock Interview Attempts</h3>
+                    <ul id="mock-scores-list" style="list-style:none; padding:0; margin:0;"></ul>
+                  </div>
+                  <div class="profile-section">
+                    <small style="color:#6b7280;">Scores are saved automatically after completing a Mock Interview session.</small>
+                  </div>
+                </section>
               </div>
             </div>
           </div>
@@ -297,6 +360,8 @@
             </div>
             <div id="chat-stream-anchor"></div>
           </div>
+          <!-- Resize handle for sidebar -->
+          <div id="sidebar-resize-handle" style="width:4px; cursor:ew-resize; background:#dcfce7; flex-shrink:0; position:relative; transition:background 0.2s;" title="Drag to resize sidebar"></div>
           <aside id="chat-history" style="width:320px; flex:0 0 320px; border-left:1px solid #dcfce7; background:#fff; border-radius:12px; padding:12px; overflow:auto;">
             <h4 style="margin:6px 0 12px 4px; color:#1e293b;">Chats</h4>
             <button id="new-chat" class="cta-chat" style="width:100%; border-radius:10px; margin-bottom:8px; padding:10px 12px; font-size:.95rem;">New Chat</button>
@@ -386,6 +451,8 @@
       </div>
     </div>
 
+    <!-- Linking API configuration (must load before script.js) -->
+    <script src="config.js"></script>
     <!-- Linking custom script -->
     <script src="script.js"></script>
 
@@ -402,24 +469,66 @@
         if (label) label.textContent = clamped + '/100';
       }
 
-      async function openProgressModal() {
-        var modal = document.getElementById('progress-modal');
+      function setPracticeDonut(score) {
+        var clamped = Math.max(0, Math.min(100, Number(score) || 0));
+        var circumference = 2 * Math.PI * 52;
+        var dash = (clamped / 100) * circumference;
+        var rest = Math.max(0, circumference - dash);
+        var progress = document.getElementById('practice-donut-progress');
+        var label = document.getElementById('practice-donut-label');
+        if (progress) progress.setAttribute('stroke-dasharray', dash + ' ' + rest);
+        if (label) label.textContent = clamped + '%';
+      }
+
+      function setMockDonut(score) {
+        // Mock Interview score is out of 100 (similar to resume analyzer)
+        var scoreValue = Math.max(0, Math.min(100, Number(score) || 0));
+        var circumference = 2 * Math.PI * 52;
+        var dash = (scoreValue / 100) * circumference;
+        var rest = Math.max(0, circumference - dash);
+        var progress = document.getElementById('mock-donut-progress');
+        var label = document.getElementById('mock-donut-label');
+        if (progress) progress.setAttribute('stroke-dasharray', dash + ' ' + rest);
+        if (label) label.textContent = Math.round(scoreValue) + '/100';
+      }
+
+      function escapeHtml(str) {
+        var div = document.createElement('div');
+        div.textContent = str == null ? '' : String(str);
+        return div.innerHTML;
+      }
+
+      function buildStageBreakdownHTML(breakdown) {
+        if (!Array.isArray(breakdown) || breakdown.length === 0) return '';
+        return breakdown.map(function(stage) {
+          var pct = Math.max(0, Math.min(100, Math.round(Number(stage && stage.percentage) || 0)));
+          var title = stage && stage.title ? stage.title : 'Stage';
+          var correct = Number(stage && stage.correct) || 0;
+          var total = Number(stage && stage.total) || 0;
+          return '<div class="stage-row">' +
+            '<div class="stage-row__header"><span>' + escapeHtml(title) + '</span><span>' + correct + '/' + total + ' (' + pct + '%)</span></div>' +
+            '<div class="stage-row__bar"><div class="stage-row__bar-fill" style="width:' + pct + '%;"></div></div>' +
+          '</div>';
+        }).join('');
+      }
+
+      async function loadResumeScores() {
         var list = document.getElementById('scores-list');
         var latestMeta = document.getElementById('latest-meta');
-        if (!modal || !list || !latestMeta) return;
+        if (!list || !latestMeta) return;
         list.innerHTML = '<li style="color:#6b7280;">Loading...</li>';
         latestMeta.textContent = 'Loading...';
-        modal.style.display = 'block';
+        setDonut(0);
 
         try {
-          var res = await fetch('http://localhost:3000/api/resume-score', { credentials: 'include' });
+          const apiUrl = window.API_CONFIG ? window.API_CONFIG.RESUME_SCORE : 'http://localhost:3000/api/resume-score';
+          var res = await fetch(apiUrl, { credentials: 'include' });
           if (!res.ok) throw new Error('Failed to fetch');
           var data = await res.json();
           var scores = Array.isArray(data && data.scores) ? data.scores : [];
 
           list.innerHTML = '';
           if (scores.length === 0) {
-            setDonut(0);
             latestMeta.textContent = 'No scores saved yet.';
             list.innerHTML = '<li style="color:#6b7280;">Save a score in the Resume Analyzer to see it here.</li>';
             return;
@@ -432,7 +541,6 @@
           if (latest && latest.timestamp) meta.push(new Date(latest.timestamp).toLocaleString());
           if (latest && latest.fileName) meta.push(latest.fileName);
           latestMeta.textContent = meta.join(' • ') || 'Latest';
-          // Latest details
           var details = latest && latest.details ? latest.details : null;
           var detailsSection = document.getElementById('latest-details');
           if (detailsSection) {
@@ -456,10 +564,134 @@
             list.appendChild(li);
           });
         } catch (e) {
-          setDonut(0);
           latestMeta.textContent = 'Unable to load scores. Please log in.';
-          list.innerHTML = '<li style="color:#b91c1c;">Login required or server unavailable (http://localhost:3000)</li>';
+          const apiBase = window.API_CONFIG ? window.API_CONFIG.BASE_URL : 'http://localhost:3000';
+          list.innerHTML = '<li style="color:#b91c1c;">Login required or server unavailable (' + apiBase + ')</li>';
         }
+      }
+
+      async function loadPracticeScores() {
+        var list = document.getElementById('practice-scores-list');
+        var latestMeta = document.getElementById('practice-latest-meta');
+        var breakdownSection = document.getElementById('practice-breakdown-section');
+        var breakdownEl = document.getElementById('practice-breakdown');
+        if (!list || !latestMeta) return;
+        list.innerHTML = '<li style="color:#6b7280;">Loading...</li>';
+        latestMeta.textContent = 'Loading...';
+        if (breakdownSection) breakdownSection.style.display = 'none';
+        if (breakdownEl) breakdownEl.innerHTML = '';
+        setPracticeDonut(0);
+
+        try {
+          const apiUrl = window.API_CONFIG ? window.API_CONFIG.BASE_URL + '/api/smart-practice-scores' : 'http://localhost:3000/api/smart-practice-scores';
+          var res = await fetch(apiUrl, { credentials: 'include' });
+          if (!res.ok) throw new Error('Failed to fetch');
+          var data = await res.json();
+          var scores = Array.isArray(data && data.scores) ? data.scores : [];
+          list.innerHTML = '';
+          if (scores.length === 0) {
+            latestMeta.textContent = 'Complete a Smart Practice session to see your progress.';
+            list.innerHTML = '<li style="color:#6b7280;">No practice attempts saved yet.</li>';
+            return;
+          }
+          scores.sort(function(a, b) { return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(); });
+          var latest = scores[0];
+          var pct = latest && typeof latest.percentage === 'number'
+            ? latest.percentage
+            : (latest && typeof latest.correctAnswers === 'number' && latest.totalQuestions
+              ? Math.round((latest.correctAnswers / latest.totalQuestions) * 100)
+              : 0);
+          setPracticeDonut(pct);
+          var meta = [];
+          if (latest && latest.timestamp) meta.push(new Date(latest.timestamp).toLocaleString());
+          var latestCorrect = typeof latest.correctAnswers === 'number' ? latest.correctAnswers : 0;
+          var latestTotal = typeof latest.totalQuestions === 'number' ? latest.totalQuestions : 0;
+          if (latestTotal) {
+            meta.push(latestCorrect + '/' + latestTotal + ' correct');
+          }
+          latestMeta.textContent = meta.join(' • ') || 'Latest';
+          var breakdown = Array.isArray(latest && latest.stageBreakdown) ? latest.stageBreakdown : [];
+          if (breakdownSection && breakdownEl) {
+            if (breakdown.length) {
+              breakdownSection.style.display = 'block';
+              breakdownEl.innerHTML = buildStageBreakdownHTML(breakdown);
+            } else {
+              breakdownSection.style.display = 'none';
+            }
+          }
+          scores.slice(0, 10).forEach(function(s){
+            var li = document.createElement('li');
+            var ts = s.timestamp ? new Date(s.timestamp).toLocaleString() : '';
+            var perc = typeof s.percentage === 'number'
+              ? s.percentage
+              : (s.totalQuestions ? Math.round((s.correctAnswers / s.totalQuestions) * 100) : 0);
+            var correct = typeof s.correctAnswers === 'number' ? s.correctAnswers : 0;
+            var total = typeof s.totalQuestions === 'number' ? s.totalQuestions : 0;
+            li.textContent = ts + ' — ' + perc + '% (' + correct + '/' + total + ')';
+            li.style.padding = '6px 0';
+            list.appendChild(li);
+          });
+        } catch (e) {
+          latestMeta.textContent = 'Unable to load practice scores. Please log in.';
+          const apiBase = window.API_CONFIG ? window.API_CONFIG.BASE_URL : 'http://localhost:3000';
+          list.innerHTML = '<li style="color:#b91c1c;">Login required or server unavailable (' + apiBase + ')</li>';
+        }
+      }
+
+      async function loadMockInterviewScores() {
+        var list = document.getElementById('mock-scores-list');
+        var latestMeta = document.getElementById('mock-latest-meta');
+        if (!list || !latestMeta) return;
+        list.innerHTML = '<li style="color:#6b7280;">Loading...</li>';
+        latestMeta.textContent = 'Loading...';
+        setMockDonut(0);
+
+        try {
+          const apiUrl = window.API_CONFIG ? window.API_CONFIG.BASE_URL + '/api/mock-interview-scores' : 'http://localhost:3000/api/mock-interview-scores';
+          var res = await fetch(apiUrl, { credentials: 'include' });
+          if (!res.ok) throw new Error('Failed to fetch');
+          var data = await res.json();
+          var scores = Array.isArray(data && data.scores) ? data.scores : [];
+          list.innerHTML = '';
+          if (scores.length === 0) {
+            latestMeta.textContent = 'Complete a Mock Interview session to see your progress.';
+            list.innerHTML = '<li style="color:#6b7280;">No mock interview attempts saved yet.</li>';
+            return;
+          }
+          scores.sort(function(a, b) { return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(); });
+          var latest = scores[0];
+          var scoreValue = latest && typeof latest.score === 'number' ? latest.score : 0;
+          setMockDonut(scoreValue);
+          var meta = [];
+          if (latest && latest.timestamp) meta.push(new Date(latest.timestamp).toLocaleString());
+          if (latest && latest.jobTitle) meta.push('Job: ' + latest.jobTitle);
+          latestMeta.textContent = meta.join(' • ') || 'Latest';
+          
+          scores.slice(0, 10).forEach(function(s){
+            var li = document.createElement('li');
+            var ts = s.timestamp ? new Date(s.timestamp).toLocaleString() : '';
+            var score = typeof s.score === 'number' ? Math.round(s.score) : '0';
+            var job = s.jobTitle ? ' • ' + s.jobTitle : '';
+            li.textContent = ts + job + ' — ' + score + '/100';
+            li.style.padding = '6px 0';
+            list.appendChild(li);
+          });
+        } catch (e) {
+          latestMeta.textContent = 'Unable to load mock interview scores. Please log in.';
+          const apiBase = window.API_CONFIG ? window.API_CONFIG.BASE_URL : 'http://localhost:3000';
+          list.innerHTML = '<li style="color:#b91c1c;">Login required or server unavailable (' + apiBase + ')</li>';
+        }
+      }
+
+      async function openProgressModal() {
+        var modal = document.getElementById('progress-modal');
+        if (!modal) return;
+        modal.style.display = 'block';
+        await Promise.all([
+          loadResumeScores(),
+          loadPracticeScores(),
+          loadMockInterviewScores()
+        ]);
       }
 
       window.openProgressModal = openProgressModal;
@@ -491,6 +723,13 @@
           var params = new URLSearchParams(window.location.search);
           if (params.get('showProgress') === '1') {
             openProgressModal();
+            // Remove the query parameter after opening to prevent reopening on refresh
+            params.delete('showProgress');
+            var newUrl = window.location.pathname;
+            if (params.toString()) {
+              newUrl += '?' + params.toString();
+            }
+            window.history.replaceState({}, '', newUrl);
           }
         } catch (e) {}
       });

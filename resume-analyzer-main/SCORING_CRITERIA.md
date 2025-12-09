@@ -102,3 +102,12 @@ The AI prompt instructs the model to evaluate resumes based on these four criter
 
 
 
+
+
+
+
+
+
+
+
+
